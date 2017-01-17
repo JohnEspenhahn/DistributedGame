@@ -29,7 +29,7 @@ public class DistroHalloweenSimulation implements PropertyChangeListener {
 		this.cp = cp;
 		this.cp.addPropertyChangeListener(this);
 		
-		this.sender = NioClient.startInThread(); 
+		this.sender = NioClient.startInThread(new RspHandler(cp)); 
 	}
 
 	@Override

@@ -236,9 +236,8 @@ public class NioClient implements Runnable {
 		return SelectorProvider.provider().openSelector();
 	}
 
-	public static NioSender startInThread() {
+	public static NioSender startInThread(final RspHandler handler) {
 		NioSender sender = null;
-		final RspHandler handler = new RspHandler();
 		try {
 			// Start client listening in another thread
 			NioClient client = new NioClient(InetAddress.getByName("localhost"), 9090);
