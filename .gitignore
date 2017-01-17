@@ -1,0 +1,6 @@
+bin/
+.classpath
+src/coupledsims/
+.project
+*.gif
+*.jpg
