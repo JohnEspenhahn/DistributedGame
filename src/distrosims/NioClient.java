@@ -26,6 +26,7 @@ import port.trace.nio.SocketChannelWritten;
 
 public class NioClient implements Runnable {
 	private static final byte[] EMPTY_BYTES = new byte[0];
+	public static final char SEPERATOR = '|';
 	
 	// The host:port combination to connect to
 	private InetAddress hostAddress;
@@ -344,11 +345,17 @@ public class NioClient implements Runnable {
 			synchronized (this.client.pendingChanges) {
 				this.client.pendingChanges.add(new ChangeRequest(socket, ChangeRequest.CHANGEOPS, SelectionKey.OP_WRITE));
 				
+				// Add seperator
+				byte[] arr = new byte[data.length + 1];
+				System.arraycopy(data, 0, arr, 0, data.length);
+				arr[arr.length - 1] = (byte) SEPERATOR;
+				ByteBuffer bb_data = ByteBuffer.wrap(arr);
+				
+				// ByteBuffer bb_data = ByteBuffer.wrap(data);
 				synchronized (this.client.pendingData) {
 					List<ByteBuffer> queue = this.client.pendingData.get(socket);
 					if (queue == null) throw new RuntimeException("Pending data queue was not initialized in connect!");
-					
-					queue.add(ByteBuffer.wrap(data));
+					queue.add(bb_data);
 				}
 			}
 
