@@ -316,12 +316,9 @@ public class NioClient implements Runnable {
 		}
 
 		// Start handler listening in another thread
-		(new Thread() {
-			@Override
-			public void run() {
-		      handler.waitForResponse();
-			}
-		}).start();
+		Thread handler_thread = new Thread(handler);
+		handler_thread.setName("rsphandler");
+		handler_thread.start();
 		
 		return sender;
     }

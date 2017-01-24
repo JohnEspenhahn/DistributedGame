@@ -1,33 +1,34 @@
 package distrosims;
 
-import StringProcessors.HalloweenCommandProcessor;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
-public class RspHandler {
-	private byte[] rsp;
+import StringProcessors.HalloweenCommandProcessor;
+import port.trace.nio.RemoteCommandExecuted;
+
+public class RspHandler implements Runnable {
+	private BlockingQueue<byte[]> rsp;
 	private HalloweenCommandProcessor cp;
 	
 	public RspHandler(HalloweenCommandProcessor cp) {
 		this.cp = cp;
+		this.rsp = new LinkedBlockingQueue<byte[]>(10);
 	}
 	
-	public synchronized boolean handleResponse(byte[] rsp) {
-		this.rsp = rsp;
-		this.notify();
+	public boolean handleResponse(byte[] rsp) {
+		this.rsp.offer(rsp);
 		return false;
 	}
 	
-	public synchronized void waitForResponse() {
-		while(true) {
-			if (this.rsp == null) {
-				try {
-					this.wait();
-				} catch (InterruptedException e) { }
-			} else {
-				String rsp_str = new String(this.rsp);
-				System.out.println("RspHandler received: " + rsp_str);
+	@Override
+	public void run() {
+		while (true) {
+			try {
+				String rsp_str = new String(this.rsp.take());
+				RemoteCommandExecuted.newCase(this, rsp_str);
 				this.cp.processCommand(rsp_str);
-				
-				this.rsp = null;
+			} catch (InterruptedException e) {
+				e.printStackTrace();
 			}
 		}
 	}
