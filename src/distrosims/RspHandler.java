@@ -15,12 +15,13 @@ public class RspHandler implements Runnable {
 	
 	public RspHandler(HalloweenCommandProcessor cp) {
 		this.cp = cp;
-		this.rsp = new LinkedBlockingQueue<byte[]>(10);
+		this.rsp = new LinkedBlockingQueue<byte[]>(501);
 		this.partial_cmd = "";
 	}
 	
 	public boolean handleResponse(byte[] rsp) {
-		this.rsp.offer(rsp);
+		boolean accepted = this.rsp.offer(rsp);
+		if (!accepted) System.err.println("Dropped message!");
 		return false;
 	}
 	
@@ -37,6 +38,13 @@ public class RspHandler implements Runnable {
 					String cmd = rsp_str.substring(start, end);
 					RemoteCommandExecuted.newCase(this, cmd);
 					this.cp.processCommand(cmd);
+					
+					// For timing debug
+					if (DistroHalloweenSimulation.WAIT_FOR_CMD > 0) {
+						if (--DistroHalloweenSimulation.WAIT_FOR_CMD == 0) {
+							System.out.println("Completed in " + (System.currentTimeMillis()-DistroHalloweenSimulation.TIMING_START) + "ms");
+						}
+					}
 					
 					// Look for next command
 					start = end+1;

@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import distrosims.DistroHalloweenSimulation.SimuMode;
+
 public class NioBroadcastServer implements Runnable {
 	// The host:port combination to listen on
 	private InetAddress hostAddress;
@@ -70,13 +72,15 @@ public class NioBroadcastServer implements Runnable {
 	}
 	
 	public void broadcast(SocketChannel src, byte[] data) {
-		System.out.println("Broadcasting: " + new String(data));
+		// System.out.println("Broadcasting: " + new String(data));
 		
 		synchronized (this.clients) {
 			Iterator<SocketChannel> clients = this.clients.iterator();
 			while (clients.hasNext()) {
 				SocketChannel socket = clients.next();
-				if (socket == src) continue;
+				
+				// If not atomic, don't send to self
+				if (DistroHalloweenSimulation.MODE != SimuMode.ATOMIC && socket == src) continue;
 				
 				synchronized (this.pendingChanges) {
 					// Indicate we want the interest ops set changed
@@ -255,6 +259,9 @@ public class NioBroadcastServer implements Runnable {
 			Thread server_thread = new Thread(new NioBroadcastServer(null, 9090, worker));
 			server_thread.setName("server");
 			server_thread.start();
+			
+			// Start command line thread
+			DistroHalloweenSimulation.startCommandLineThread(null);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
