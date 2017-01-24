@@ -248,8 +248,13 @@ public class NioBroadcastServer implements Runnable {
 	public static void main(String[] args) {
 		try {
 			EchoWorker worker = new EchoWorker();
-			new Thread(worker).start();
-			new Thread(new NioBroadcastServer(null, 9090, worker)).start();
+			Thread worker_thread = new Thread(worker);
+			worker_thread.setName("worker");
+			worker_thread.start();
+			
+			Thread server_thread = new Thread(new NioBroadcastServer(null, 9090, worker));
+			server_thread.setName("server");
+			server_thread.start();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

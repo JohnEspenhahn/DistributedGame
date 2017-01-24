@@ -3,6 +3,7 @@ package distrosims;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -16,7 +17,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import distrosims.NioClient.NioSender;
+import port.trace.nio.SocketChannelConnectFinished;
+import port.trace.nio.SocketChannelConnectInitiated;
+import port.trace.nio.SocketChannelInterestOp;
+import port.trace.nio.SocketChannelRead;
+import port.trace.nio.SocketChannelRegistered;
+import port.trace.nio.SocketChannelWritten;
 
 public class NioClient implements Runnable {
 	private static final byte[] EMPTY_BYTES = new byte[0];
@@ -46,7 +52,23 @@ public class NioClient implements Runnable {
 		this.selector = this.initSelector();
 	}
 	
-	public NioSender connect(RspHandler handler) throws IOException {
+	/**
+	 * Called by the main thread to create a new selector object
+	 * @return The selector object
+	 * @throws IOException Failed to open the selector
+	 */
+	private Selector initSelector() throws IOException {
+		// Create a new selector
+		return SelectorProvider.provider().openSelector();
+	}
+	
+	/**
+	 * Called from main thread to tell the selector thread to start connecting
+	 * @param handler The handler which will be called when the selector sees a message
+	 * @return A wrapper object which can be used to send messages to the selector
+	 * @throws IOException If the socket fails to open
+	 */
+	protected NioSender connect(RspHandler handler) throws IOException {
 		// Start a new connection
 		SocketChannel socket = this.initiateConnection();
 		
@@ -67,7 +89,36 @@ public class NioClient implements Runnable {
 		
 		return new NioSender(this, socket);
 	}
+	
+	/**
+	 * Called from connect in the main thread to start a new connection
+	 * @return The requested socket
+	 * @throws IOException If the socket fails to open
+	 */
+	private SocketChannel initiateConnection() throws IOException {
+		// Create a non-blocking socket channel
+		SocketChannel socketChannel = SocketChannel.open();
+		socketChannel.configureBlocking(false);
+	
+		// Kick off connection establishment
+		SocketAddress addr = new InetSocketAddress(this.hostAddress, this.port);
+		socketChannel.connect(addr);
+		SocketChannelConnectInitiated.newCase(this, socketChannel, addr);
+	
+		// Queue a channel registration since the caller is not the 
+		// selecting thread. As part of the registration we'll register
+		// an interest in connection events. These are raised when a channel
+		// is ready to complete connection establishment.
+		synchronized(this.pendingChanges) {
+			this.pendingChanges.add(new ChangeRequest(socketChannel, ChangeRequest.REGISTER, SelectionKey.OP_CONNECT));
+		}
+		
+		return socketChannel;
+	}
 
+	/**
+	 * The run function for the selector thread
+	 */
 	public void run() {
 		while (true) {
 			try {
@@ -80,9 +131,11 @@ public class NioClient implements Runnable {
 						case ChangeRequest.CHANGEOPS:
 							SelectionKey key = change.socket.keyFor(this.selector);
 							key.interestOps(change.ops);
+							SocketChannelInterestOp.newCase(this, key, change.ops);
 							break;
 						case ChangeRequest.REGISTER:
 							change.socket.register(this.selector, change.ops);
+							SocketChannelRegistered.newCase(this, change.socket, this.selector, change.ops);
 							break;
 						}
 					}
@@ -117,6 +170,11 @@ public class NioClient implements Runnable {
 		}
 	}
 
+	/**
+	 * Called by the selector thread to read from itself
+	 * @param key Where it is reading from
+	 * @throws IOException Needed to close socket, but failed to do so
+	 */
 	private void read(SelectionKey key) throws IOException {
 		SocketChannel socketChannel = (SocketChannel) key.channel();
 
@@ -127,6 +185,7 @@ public class NioClient implements Runnable {
 		int numRead;
 		try {
 			numRead = socketChannel.read(this.readBuffer);
+			SocketChannelRead.newCase(this, socketChannel, readBuffer);
 		} catch (IOException e) {
 			// The remote forcibly closed the connection, cancel
 			// the selection key and close the channel.
@@ -147,6 +206,13 @@ public class NioClient implements Runnable {
 		this.handleResponse(socketChannel, this.readBuffer.array(), numRead);
 	}
 
+	/**
+	 * Called by selector read thread to pass data to RspHandler
+	 * @param socketChannel The socket which the data came from
+	 * @param data The data itself
+	 * @param numRead The length of the data
+	 * @throws IOException Needed to close socket, but failed to do so
+	 */
 	private void handleResponse(SocketChannel socketChannel, byte[] data, int numRead) throws IOException {
 		// Make a correctly sized copy of the data before handing it
 		// to the client
@@ -158,12 +224,17 @@ public class NioClient implements Runnable {
 		
 		// And pass the response to it
 		if (handler.handleResponse(rspData)) {
-			// The handler has seen enough, close the connection
+			// The custom handler has seen enough, close the connection
 			socketChannel.close();
 			socketChannel.keyFor(this.selector).cancel();
 		}
 	}
 
+	/**
+	 * Called by the selector thread when it sees a SelectionKey is in write mode
+	 * @param key The SelectionKey which is in write mode
+	 * @throws IOException Failed to write to the socket
+	 */
 	private void write(SelectionKey key) throws IOException {
 		SocketChannel socketChannel = (SocketChannel) key.channel();
 
@@ -174,6 +245,7 @@ public class NioClient implements Runnable {
 			while (!queue.isEmpty()) {
 				ByteBuffer buf = queue.get(0);
 				socketChannel.write(buf);
+				SocketChannelWritten.newCase(this, socketChannel, buf);
 				if (buf.remaining() > 0) {
 					// ... or the socket's buffer fills up
 					break;
@@ -190,13 +262,18 @@ public class NioClient implements Runnable {
 		}
 	}
 
-	private void finishConnection(SelectionKey key) throws IOException {
+	/**
+	 * Called by the selection thread to finish setting up the connection (within this thread space)
+	 * @param key The SelectionKey which is getting setup
+	 */
+	private void finishConnection(SelectionKey key) {
 		SocketChannel socketChannel = (SocketChannel) key.channel();
 	
 		// Finish the connection. If the ion operation failed
 		// this will raise an IOException.
 		try {
 			socketChannel.finishConnect();
+			SocketChannelConnectFinished.newCase(this, socketChannel);
 		} catch (IOException e) {
 			// Cancel the channel's registration with our selector
 			System.out.println(e);
@@ -212,36 +289,18 @@ public class NioClient implements Runnable {
 		}
 	}
 
-	private SocketChannel initiateConnection() throws IOException {
-		// Create a non-blocking socket channel
-		SocketChannel socketChannel = SocketChannel.open();
-		socketChannel.configureBlocking(false);
-	
-		// Kick off connection establishment
-		socketChannel.connect(new InetSocketAddress(this.hostAddress, this.port));
-	
-		// Queue a channel registration since the caller is not the 
-		// selecting thread. As part of the registration we'll register
-		// an interest in connection events. These are raised when a channel
-		// is ready to complete connection establishment.
-		synchronized(this.pendingChanges) {
-			this.pendingChanges.add(new ChangeRequest(socketChannel, ChangeRequest.REGISTER, SelectionKey.OP_CONNECT));
-		}
-		
-		return socketChannel;
-	}
-
-	private Selector initSelector() throws IOException {
-		// Create a new selector
-		return SelectorProvider.provider().openSelector();
-	}
-
+	/**
+	 * Start the selector and handler threads
+	 * @param handler The handler object
+	 * @return An object which can be used to send data to the newly created main socket of the client
+	 */
 	public static NioSender startInThread(final RspHandler handler) {
 		NioSender sender = null;
 		try {
 			// Start client listening in another thread
 			NioClient client = new NioClient(InetAddress.getByName("localhost"), 9090);
 			Thread t = new Thread(client);
+			t.setName("selector");
 			t.setDaemon(true);
 			t.start();
 		  
