@@ -19,6 +19,7 @@ public class RspHandlerImpl extends UnicastRemoteObject implements RspHandlerLoc
 		this.mode = server.getMode();
 	}
 	
+	@Override
 	public void handleLocalCommand(String cmd) {
 		try {
 			if (getMode() != SimuMode.ATOMIC) {
@@ -36,6 +37,7 @@ public class RspHandlerImpl extends UnicastRemoteObject implements RspHandlerLoc
 		
 	}
 	
+	@Override
 	public void setServerMode(SimuMode mode) {
 		try {
 			this.server.setMode(mode);
