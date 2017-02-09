@@ -29,7 +29,7 @@ public class ServerImpl extends UnicastRemoteObject implements Server {
 		this.mode = m;
 		for (RspHandlerRemote r: this.repository) {
 			try {
-				r.setMode(mode);
+				r.setInstanceMode(mode);
 			} catch (ConnectException e) {
 				leave(r);
 			} catch (RemoteException e) {

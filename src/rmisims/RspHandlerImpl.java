@@ -57,7 +57,7 @@ public class RspHandlerImpl extends UnicastRemoteObject implements RspHandlerLoc
 	}
 	
 	@Override
-	public void setMode(SimuMode mode) {
+	public void setInstanceMode(SimuMode mode) {
 		this.mode = mode;
 		System.out.println("Mode set to " + mode);
 	}
