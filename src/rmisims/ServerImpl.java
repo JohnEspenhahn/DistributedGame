@@ -1,51 +1,68 @@
 package rmisims;
 
-import java.rmi.Remote;
+import java.rmi.ConnectException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.HashSet;
+import java.util.Set;
 
 public class ServerImpl extends UnicastRemoteObject implements Server {
 	private static final long serialVersionUID = 7685765417117171351L;
 	
-	private ClientRepository repository;
-	private boolean atomic;
+	private Set<RspHandlerRemote> repository;
+	private SimuMode mode;
 	
-	protected ServerImpl(ClientRepository repo) throws RemoteException {
+	protected ServerImpl() throws RemoteException {
 		super();
 		
-		this.repository = repo;
-		this.atomic = false;
+		this.repository = new HashSet<RspHandlerRemote>();
+		this.mode = SimuMode.ATOMIC;
 	}
 	
 	@Override
-	public boolean isAtomic() {
-		return this.atomic;
+	public SimuMode getMode() {
+		return this.mode;
 	}
 	
 	@Override
-	public void setAtomic(boolean a) {
-		this.atomic = a;
+	public void setMode(SimuMode m) {
+		this.mode = m;
+		for (RspHandlerRemote r: this.repository) {
+			try {
+				r.setMode(mode);
+			} catch (ConnectException e) {
+				leave(r);
+			} catch (RemoteException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 	
 	@Override
-	public void join(IRspHandler r) {
-		try {
-			this.repository.deposit(r);
-		} catch (RemoteException e) {
-			e.printStackTrace();
+	public void join(RspHandlerRemote r) {
+		this.repository.add(r);
+	}
+	
+	@Override
+	public void leave(RspHandlerRemote r) {
+		if (r != null) {
+			this.repository.remove(r);
 		}
 	}
 
 	@Override
-	public void broadcast(String msg, IRspHandler src) throws RemoteException {
-		try {
-			for (Remote r: this.repository.getObjects()) {
-				if (r instanceof IRspHandler && (this.isAtomic() || !r.equals(this))) {
-					((IRspHandler) r).handleRemoteCommand(msg);
+	public void broadcast(String msg, RspHandlerRemote src) throws RemoteException {
+		// System.out.println(msg);
+		for (RspHandlerRemote r: this.repository) {
+			if (this.getMode() == SimuMode.ATOMIC || !src.equals(r)) {
+				try {
+					r.handleRemoteCommand(msg);
+				} catch (ConnectException e) {
+					leave(r);
+				} catch (RemoteException e) {
+					e.printStackTrace();
 				}
 			}
-		} catch (RemoteException e) {
-			e.printStackTrace();
 		}
 	}
 
