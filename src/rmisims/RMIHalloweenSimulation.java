@@ -38,6 +38,7 @@ public class RMIHalloweenSimulation implements PropertyChangeListener {
 		
 		HalloweenCommandProcessor cp = BeauAndersonFinalProject.createSimulation(
 				SIMULATION1_PREFIX, 0, SIMULATION_COMMAND_Y_OFFSET, SIMULATION_WIDTH, SIMULATION_HEIGHT, 100, 100);
+		cp.setConnectedToSimulation(false);
 		
 		// Command processor
 		try {
