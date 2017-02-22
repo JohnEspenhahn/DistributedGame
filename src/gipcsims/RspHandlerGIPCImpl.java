@@ -16,25 +16,43 @@ public class RspHandlerGIPCImpl implements RspHandlerGIPCLocal, RspHandlerGIPCRe
 	
 	@Override
 	public void handleLocalCommand(String cmd) {
-		if (this.server.isModeChanging()) {
-			System.out.println("Cannot send command, mode is changing");
-			return;
-		}
-		
-		if (getMode() != SimuMode.ATOMIC) {
-			RspHandlerGIPCImpl.this.handleRemoteCommand(cmd);
-		}
-		
-		if (getMode() != SimuMode.LOCAL) {
-			RspHandlerGIPCImpl.this.server.broadcast(cmd, RspHandlerGIPCImpl.this);
-		} else {
-			updateTimingCount();
+		synchronized (SimuModeObj.class) {
+			if (SimuModeObj.isChanging())
+				return;
+			
+			System.out.println("Starting handle local");
+			SimuMode mode = SimuModeObj.getMode();
+			
+			if (mode != SimuMode.ATOMIC) {
+				this.handleRemoteCommand(cmd);
+			}
+			
+			if (mode != SimuMode.LOCAL) {
+				this.server.broadcast(cmd, mode, this);
+			} else {
+				updateTimingCount();
+			}
 		}
 	}
 	
 	@Override
-	public void setServerMode(SimuMode mode) {		
-		this.server.setMode(mode);
+	public boolean setModeChanging() {
+		SimuModeObj.setModeChanging();
+		return true;
+	}
+	
+	@Override
+	public void unsetModeChanging() {
+		SimuModeObj.unsetModeChanging();
+	}
+	
+	@Override
+	public void setServerMode(SimuMode mode) {
+		// If not yet notified that the mode is changing, try to change it
+		if (SimuModeObj.takeModeChanging()) {
+			this.setInstanceMode(mode);
+			this.server.setMode(mode, this);
+		}
 	}
 	
 	private void updateTimingCount() {
@@ -45,20 +63,16 @@ public class RspHandlerGIPCImpl implements RspHandlerGIPCLocal, RspHandlerGIPCRe
 		}
 	}
 	
-	public SimuMode getMode() {
-		return SimuModeObj.getMode();
-	}
-	
 	@Override
 	public boolean setInstanceMode(SimuMode mode) {
 		SimuModeObj.setMode(mode);
-		System.out.println("Mode set to " + mode);
 		return true;
 	}
 	
 	@Override
 	public void handleRemoteCommand(String cmd) {		
 		// Has a full command
+		System.err.println("Executed " + cmd);
 		RemoteCommandExecuted.newCase(this, cmd);
 		this.cp.processCommand(cmd);
 		

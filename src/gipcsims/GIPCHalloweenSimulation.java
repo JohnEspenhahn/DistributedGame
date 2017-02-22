@@ -40,7 +40,7 @@ public class GIPCHalloweenSimulation implements PropertyChangeListener {
 		String name = in.nextLine();
 		
 		Tracer.showWarnings(false);
-		Tracer.showInfo(true);
+		Tracer.showInfo(false);
 		Tracer.setKeywordPrintStatus(GIPCHalloweenSimulation.class, true);
 		// Show the current thread in each log item
 		Tracer.setDisplayThreadName(true);

@@ -8,42 +8,36 @@ import inputport.rpc.duplex.GIPCRemoteException;
 public class ServerImpl implements Server {	
 	private Set<RspHandlerGIPCRemote> repository;
 	
-	private Consensus simucons;
-	
 	protected ServerImpl() {
-		this.simucons = new ConsensusImpl();
 		this.repository = new HashSet<RspHandlerGIPCRemote>();
 	}
 	
+	// TODO is synchronized sufficient?
 	@Override
-	public boolean isModeChanging() {
-		return !this.simucons.isFree();
-	}
-	
-	@Override
-	public IPCMode getIPC() {
-		return SimuModeObj.getIPC();
-	}
-	
-	@Override
-	public SimuMode getMode() {
-		return SimuModeObj.getMode();
-	}
-	
-	@Override
-	public boolean setMode(SimuMode mode) {
-		if (!this.simucons.claim()) {
-			System.out.println("Cannot change mode, already changing");
-			return false;
+	public void setMode(SimuMode mode, RspHandlerGIPCRemote src) {
+		// Ignore if the mode is already changing
+		if (!SimuModeObj.takeModeChanging()) return;
+		
+		// Tell everyone the mode is changing (synchronous)
+		for (RspHandlerGIPCRemote r: this.repository) {
+			if (r.equals(src)) continue;
+			
+			r.setModeChanging();
 		}
 		
-		SimuModeObj.setMode(mode);
+		// Change the mode (synchronous)
 		for (RspHandlerGIPCRemote r: this.repository) {
+			if (r.equals(src)) continue;
+			
 			r.setInstanceMode(mode);
 		}
 		
-		this.simucons.release();
-		return true;
+		// Tell everyone the mode has changed
+		for (RspHandlerGIPCRemote r: this.repository) {
+			r.unsetModeChanging();
+		}
+		
+		SimuModeObj.unsetModeChanging();
 	}
 	
 	@Override
@@ -59,15 +53,9 @@ public class ServerImpl implements Server {
 	}
 
 	@Override
-	public void broadcast(String msg, RspHandlerGIPCRemote src) {
-		if (this.isModeChanging()) {
-			System.out.println("Cannot send command, mode is changing");
-			return;
-		}
-		
-		// System.out.println(msg);
+	public void broadcast(String msg, SimuMode mode, RspHandlerGIPCRemote src) {
 		for (RspHandlerGIPCRemote r: this.repository) {
-			if (this.getMode() == SimuMode.ATOMIC || !src.equals(r)) {
+			if (mode == SimuMode.ATOMIC || !src.equals(r)) {
 				try {
 					r.handleRemoteCommand(msg);
 				} catch (GIPCRemoteException e) {
