@@ -36,7 +36,9 @@ public class SimuModeObj {
 	public synchronized static SimuMode getMode() {
 		while (mode_changing) {
 			try {
+				System.out.println("Waiting for SimuMode");
 				SimuModeObj.class.wait();
+				System.out.println("Done waiting for SimuMode");
 			} catch (InterruptedException e) { }
 		}
 		

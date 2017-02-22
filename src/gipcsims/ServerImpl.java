@@ -12,7 +12,6 @@ public class ServerImpl implements Server {
 		this.repository = new HashSet<RspHandlerGIPCRemote>();
 	}
 	
-	// TODO is synchronized sufficient?
 	@Override
 	public void setMode(SimuMode mode, RspHandlerGIPCRemote src) {
 		// Ignore if the mode is already changing
@@ -32,12 +31,13 @@ public class ServerImpl implements Server {
 			r.setInstanceMode(mode);
 		}
 		
-		// Tell everyone the mode has changed
-		for (RspHandlerGIPCRemote r: this.repository) {
-			r.unsetModeChanging();
+		// Atomically send an asynchronous message to every client that the mode has finished changing
+		synchronized (SimuModeObj.class) {
+			SimuModeObj.unsetModeChanging();
+			for (RspHandlerGIPCRemote r: this.repository) {
+				r.unsetModeChanging();
+			}
 		}
-		
-		SimuModeObj.unsetModeChanging();
 	}
 	
 	@Override
