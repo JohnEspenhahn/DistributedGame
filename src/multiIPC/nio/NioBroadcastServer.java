@@ -1,4 +1,4 @@
-package gipcsims.and_nio;
+package multiIPC.nio;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -18,8 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import gipcsims.SimuMode;
-import gipcsims.SimuModeObj;
+import multiIPC.modes.SimuMode;
 
 public class NioBroadcastServer implements Runnable {
 	// The host:port combination to listen on
@@ -81,7 +80,7 @@ public class NioBroadcastServer implements Runnable {
 				SocketChannel socket = clients.next();
 				
 				// If not atomic, don't send to self
-				if (SimuModeObj.getMode() != SimuMode.ATOMIC && socket == src) continue;
+				if (SimuMode.getMode() != SimuMode.ATOMIC && socket == src) continue;
 				
 				synchronized (this.pendingChanges) {
 					// Indicate we want the interest ops set changed

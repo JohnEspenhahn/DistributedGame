@@ -1,4 +1,4 @@
-package gipcsims.and_nio;
+package multiIPC.nio;
 
 import java.nio.channels.SocketChannel;
 

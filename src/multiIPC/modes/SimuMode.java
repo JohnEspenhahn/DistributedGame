@@ -1,6 +1,7 @@
-package gipcsims;
+package multiIPC.modes;
 
-public class SimuModeObj {
+public enum SimuMode { 
+	LOCAL, BASIC, ATOMIC;
 	
 	private static SimuMode mode = SimuMode.ATOMIC;
 	private static boolean mode_changing = false;
@@ -15,35 +16,37 @@ public class SimuModeObj {
 	
 	public synchronized static void setModeChanging() {
 		System.out.println("mode_changing = true");
-		SimuModeObj.mode_changing = true;
+		SimuMode.mode_changing = true;
 	}
 	
 	public synchronized static void unsetModeChanging() {
 		System.out.println("mode_changing = false");
-		SimuModeObj.mode_changing = false;
-		SimuModeObj.class.notifyAll();
+		SimuMode.mode_changing = false;
+		SimuMode.class.notifyAll();
 	}
 	
 	public synchronized static void setMode(SimuMode m) {
-		SimuModeObj.mode = m;
+		SimuMode.mode = m;
 		System.out.println("mode = " + m);
 	}
 	
 	public synchronized static boolean isChanging() {
-		return SimuModeObj.mode_changing;
+		return SimuMode.mode_changing;
 	}
 	
 	public synchronized static SimuMode getMode() {
-		while (mode_changing) {
-			try {
-				System.out.println("Waiting for SimuMode");
-				SimuModeObj.class.wait();
-				System.out.println("Done waiting for SimuMode");
-			} catch (InterruptedException e) { }
-		}
-		
+		if (ConsensusMode.requireConsensus) waitForModeChanging();		
 		System.out.println("Got mode = " + mode);
 		return mode;
 	}
 	
+	public synchronized static void waitForModeChanging() {
+		while (mode_changing) {
+			try {
+				System.out.println("Mode waiting");
+				SimuMode.class.wait();
+				System.out.println("Done mode waiting");
+			} catch (InterruptedException e) { }
+		}
+	}
 }

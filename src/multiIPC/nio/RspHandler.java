@@ -1,10 +1,10 @@
-package gipcsims.and_nio;
+package multiIPC.nio;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import StringProcessors.HalloweenCommandProcessor;
-import gipcsims.GIPCHalloweenSimulation;
+import multiIPC.Simulation;
 import port.trace.nio.RemoteCommandExecuted;
 
 public class RspHandler implements Runnable {
@@ -41,9 +41,9 @@ public class RspHandler implements Runnable {
 					this.cp.processCommand(cmd);
 					
 					// For timing debug
-					if (GIPCHalloweenSimulation.WAIT_FOR_CMD > 0) {
-						if (--GIPCHalloweenSimulation.WAIT_FOR_CMD == 0) {
-							System.out.println("Completed in " + (System.currentTimeMillis()-GIPCHalloweenSimulation.TIMING_START) + "ms");
+					if (Simulation.WAIT_FOR_CMD > 0) {
+						if (--Simulation.WAIT_FOR_CMD == 0) {
+							System.out.println("Completed in " + (System.currentTimeMillis()-Simulation.TIMING_START) + "ms");
 						}
 					}
 					
