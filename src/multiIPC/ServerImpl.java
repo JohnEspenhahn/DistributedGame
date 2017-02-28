@@ -7,6 +7,7 @@ import java.util.List;
 
 import inputport.rpc.duplex.GIPCRemoteException;
 import multiIPC.modes.ConsensusMode;
+import multiIPC.modes.IPCMode;
 import multiIPC.modes.SimuMode;
 
 public class ServerImpl implements Server {
@@ -19,9 +20,9 @@ public class ServerImpl implements Server {
 	@Override
 	public void setSimuMode(SimuMode mode, HandlerRemote src) {
 		// Ignore if the mode is already changing
-		if (ConsensusMode.requireConsensus && !SimuMode.takeModeChanging()) return;
+		if (ConsensusMode.requireSimuConsensus && !SimuMode.takeModeChanging()) return;
 		
-		// Tell everyone the mode is changing (synchronous)
+		// Tell everyone the mode is changing (asynchronous)
 		Iterator<HandlerRemote> it;
 		it = this.repository.listIterator();
 		while (it.hasNext()) {
@@ -49,25 +50,71 @@ public class ServerImpl implements Server {
 		}
 		
 		// Atomically send an asynchronous message to every client that the mode has finished changing
-		if (ConsensusMode.requireConsensus) {
-			synchronized (SimuMode.class) {
-				SimuMode.unsetModeChanging();
-				it = this.repository.listIterator();
-				while (it.hasNext()) {
-					HandlerRemote r = it.next();
-					try {
-						r.unsetSimuModeChanging();
-					} catch (RemoteException e) {
-						it.remove();
-					}
+		if (ConsensusMode.requireSimuConsensus) {
+			SimuMode.unsetModeChanging();
+			it = this.repository.listIterator();
+			while (it.hasNext()) {
+				HandlerRemote r = it.next();
+				try {
+					r.unsetSimuModeChanging();
+				} catch (RemoteException e) {
+					it.remove();
 				}
 			}
 		}
 	}
 	
 	@Override
-	public void setConsensusMode(boolean consensusRequired, HandlerRemote src) {
-		ConsensusMode.requireConsensus = consensusRequired;
+	public void setIPCMode(IPCMode mode, HandlerRemote src) {
+		// Ignore if the mode is already changing
+		if (ConsensusMode.requireIPCConsensus && !IPCMode.takeModeChanging()) return;
+		
+		// Tell everyone the mode is changing (asynchronous)
+		Iterator<HandlerRemote> it;
+		it = this.repository.listIterator();
+		while (it.hasNext()) {
+			HandlerRemote r = it.next();
+			if (r.equals(src)) continue;
+			
+			try {
+				r.setIPCModeChanging();
+			} catch (RemoteException e) {
+				it.remove();
+			}
+		}
+		
+		// Change the mode (synchronous)
+		it = this.repository.listIterator();
+		while (it.hasNext()) {
+			HandlerRemote r = it.next();
+			if (r.equals(src)) continue;
+			
+			try {
+				r.setIPCMode(mode);
+			} catch (RemoteException e) {
+				it.remove();
+			}
+		}
+		
+		// Atomically send an asynchronous message to every client that the mode has finished changing
+		if (ConsensusMode.requireIPCConsensus) {
+			IPCMode.unsetChanging();
+			it = this.repository.listIterator();
+			while (it.hasNext()) {
+				HandlerRemote r = it.next();
+				try {
+					r.unsetIPCModeChanging();
+				} catch (RemoteException e) {
+					it.remove();
+				}
+			}
+		}
+	}
+	
+	@Override
+	public void setConsensusModes(boolean simuConsensus, boolean ipcConsensus, HandlerRemote src) {
+		ConsensusMode.requireSimuConsensus = simuConsensus;
+		ConsensusMode.requireIPCConsensus = ipcConsensus;
 		
 		Iterator<HandlerRemote> it = this.repository.listIterator();
 		while (it.hasNext()) {
@@ -75,7 +122,7 @@ public class ServerImpl implements Server {
 			if (r.equals(src)) continue;
 			
 			try {
-				r.setConsensusMode(consensusRequired);
+				r.setConsensusModes(simuConsensus, ipcConsensus);
 			} catch (RemoteException e) {
 				it.remove();
 			}

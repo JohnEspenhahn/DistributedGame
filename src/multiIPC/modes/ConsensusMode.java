@@ -2,6 +2,7 @@ package multiIPC.modes;
 
 public class ConsensusMode {
 
-	public static boolean requireConsensus = true;
+	public static boolean requireSimuConsensus = true;
+	public static boolean requireIPCConsensus = true;
 	
 }

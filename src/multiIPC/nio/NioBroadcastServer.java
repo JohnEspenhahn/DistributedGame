@@ -80,7 +80,7 @@ public class NioBroadcastServer implements Runnable {
 				SocketChannel socket = clients.next();
 				
 				// If not atomic, don't send to self
-				if (SimuMode.getMode() != SimuMode.ATOMIC && socket == src) continue;
+				if (SimuMode.get() != SimuMode.ATOMIC && socket == src) continue;
 				
 				synchronized (this.pendingChanges) {
 					// Indicate we want the interest ops set changed

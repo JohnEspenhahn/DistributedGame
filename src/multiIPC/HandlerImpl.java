@@ -3,6 +3,7 @@ package multiIPC;
 import java.rmi.RemoteException;
 
 import multiIPC.modes.ConsensusMode;
+import multiIPC.modes.IPCMode;
 import multiIPC.modes.SimuMode;
 
 public class HandlerImpl implements HandlerLocal, HandlerRemote {		
@@ -25,17 +26,23 @@ public class HandlerImpl implements HandlerLocal, HandlerRemote {
 	}
 	
 	@Override
-	public boolean setSimuModeChanging() {
+	public void setSimuModeChanging() {
 		SimuMode.setModeChanging();
-		return true;
 	}
 	
 	@Override
 	public void sendSimuMode(SimuMode mode) {
 		// If not yet notified that the mode is changing, try to change it
-		if (SimuMode.takeModeChanging()) {
-			this.setSimuMode(mode);
+		if (!ConsensusMode.requireSimuConsensus) {
 			try {
+				this.setSimuMode(mode);
+				this.server.setSimuMode(mode, this);
+			} catch (RemoteException e) {
+				e.printStackTrace();
+			}
+		} else if (SimuMode.takeModeChanging()) {
+			try {
+				this.setSimuMode(mode);
 				this.server.setSimuMode(mode, this);
 				SimuMode.waitForModeChanging();
 			} catch (RemoteException e) {
@@ -50,24 +57,62 @@ public class HandlerImpl implements HandlerLocal, HandlerRemote {
 	}
 	
 	@Override
-	public void sendConsensusMode(boolean consensusRequired) {
-		setConsensusMode(consensusRequired);
-		
+	public void setIPCModeChanging() {
+		IPCMode.setChanging();
+	}
+	
+	@Override
+	public void sendIPCMode(IPCMode mode) {
+		// If not yet notified that the mode is changing, try to change it
+		if (!ConsensusMode.requireIPCConsensus) {
+			try {
+				this.setIPCMode(mode);
+				this.server.setIPCMode(mode, this);
+			} catch (RemoteException e) {
+				e.printStackTrace();
+			}
+		} else if (IPCMode.takeModeChanging()) {
+			try {
+				this.setIPCMode(mode);
+				this.server.setIPCMode(mode, this);
+				IPCMode.waitForModeChanging();
+			} catch (RemoteException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	@Override
+	public void unsetIPCModeChanging() {
+		IPCMode.unsetChanging();
+	}
+	
+	@Override
+	public boolean setIPCMode(IPCMode mode) {
+		IPCMode.set(mode);
+		return true;
+	}
+	
+	@Override
+	public void sendConsensusModes(boolean simu, boolean ipc) {	
 		try {
-			server.setConsensusMode(consensusRequired, this);
+			setConsensusModes(simu, ipc);
+			server.setConsensusModes(ConsensusMode.requireSimuConsensus, ConsensusMode.requireIPCConsensus, this);
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		}
 	}
 	
 	@Override
-	public void setConsensusMode(boolean consensusRequired) {
-		ConsensusMode.requireConsensus = consensusRequired;
+	public void setConsensusModes(boolean simuConsensus, boolean ipcConsensus) {
+		ConsensusMode.requireSimuConsensus = simuConsensus;
+		ConsensusMode.requireIPCConsensus = ipcConsensus;
+		System.out.println("consensus: simu = " + simuConsensus + "; ipc = " + ipcConsensus + ";");
 	}
 	
 	@Override
 	public boolean setSimuMode(SimuMode mode) {
-		SimuMode.setMode(mode);
+		SimuMode.set(mode);
 		return true;
 	}
 	

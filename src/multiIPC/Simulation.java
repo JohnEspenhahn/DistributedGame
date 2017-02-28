@@ -16,6 +16,7 @@ import inputport.rpc.GIPCLocateRegistry;
 import inputport.rpc.GIPCRegistry;
 import main.BeauAndersonFinalProject;
 import multiIPC.modes.ConsensusMode;
+import multiIPC.modes.IPCMode;
 import multiIPC.modes.SimuMode;
 import multiIPC.nio.NioClient;
 import multiIPC.nio.NioClient.NioSender;
@@ -73,8 +74,6 @@ public class Simulation implements PropertyChangeListener {
 	private HandlerLocal rmi_handler;
 	private NioSender nio_sender;
 	
-	private HandlerLocal active_handler;
-	
 	public Simulation(HalloweenCommandProcessor cp, String name) throws MalformedURLException, NotBoundException, RemoteException {
 		this.cp = cp;
 		this.cp.addPropertyChangeListener(this);
@@ -99,7 +98,6 @@ public class Simulation implements PropertyChangeListener {
 		rmi_server.join((HandlerRemote) stub);
 		
 		// Set GIPC as active handler
-		this.active_handler = this.gipc_handler;
 		startCommandLineThread();
 	}
 	
@@ -111,11 +109,21 @@ public class Simulation implements PropertyChangeListener {
 				while (in.hasNextLine()) {
 					String line = in.next();
 					if (line.equalsIgnoreCase("atomic")) {
-						active_handler.sendSimuMode(SimuMode.ATOMIC);
+						getActiveHandler().sendSimuMode(SimuMode.ATOMIC);
 					} else if (line.equalsIgnoreCase("basic")) {
-						active_handler.sendSimuMode(SimuMode.BASIC);
+						getActiveHandler().sendSimuMode(SimuMode.BASIC);
 					} else if (line.equalsIgnoreCase("local")) {
-						active_handler.sendSimuMode(SimuMode.LOCAL);
+						getActiveHandler().sendSimuMode(SimuMode.LOCAL);
+					} else if (line.equalsIgnoreCase("gipc")) {
+						getActiveHandler().sendIPCMode(IPCMode.GIPC);
+					} else if (line.equalsIgnoreCase("rmi")) {
+						getActiveHandler().sendIPCMode(IPCMode.RMI);
+					} else if (line.equalsIgnoreCase("nio")) {
+						getActiveHandler().sendIPCMode(IPCMode.NIO);
+					} else if (line.equalsIgnoreCase("simuconsensus")) {
+						getActiveHandler().sendConsensusModes(!ConsensusMode.requireSimuConsensus, ConsensusMode.requireIPCConsensus);
+					} else if (line.equalsIgnoreCase("ipcconsensus")) {
+						getActiveHandler().sendConsensusModes(ConsensusMode.requireSimuConsensus, !ConsensusMode.requireIPCConsensus);
 					} else if (line.equalsIgnoreCase("time")) {
 						if (cp != null) {
 							final int moves = (in.hasNextInt() ? in.nextInt() : 10);
@@ -153,17 +161,17 @@ public class Simulation implements PropertyChangeListener {
 		LocalCommandObserved.newCase(this, cmd);
 		
 		synchronized (SimuMode.class) {
-			if (ConsensusMode.requireConsensus && SimuMode.isChanging())
+			if (ConsensusMode.requireSimuConsensus && SimuMode.isChanging())
 				return;
 			
-			SimuMode mode = SimuMode.getMode();
+			SimuMode mode = SimuMode.get();
 			
 			if (mode != SimuMode.ATOMIC) {
 				this.executeCommand(cmd);
 			}
 			
 			if (mode != SimuMode.LOCAL) {
-				this.active_handler.broadcast(cmd, mode);
+				getActiveHandler().broadcast(cmd, mode);
 			} else {
 				updateTimingCount();
 			}
@@ -183,6 +191,18 @@ public class Simulation implements PropertyChangeListener {
 			if (--Simulation.WAIT_FOR_CMD == 0) {
 				System.out.println("Completed in " + (System.currentTimeMillis() - Simulation.TIMING_START) + "ms");
 			}
+		}
+	}
+	
+	protected HandlerLocal getActiveHandler() {
+		switch (IPCMode.get()) {
+		default:
+		case NIO:
+			throw new RuntimeException("NIO not done yet!");
+		case RMI:
+			return rmi_handler;
+		case GIPC:
+			return gipc_handler;
 		}
 	}
 }
