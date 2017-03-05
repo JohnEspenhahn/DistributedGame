@@ -19,7 +19,6 @@ import multiIPC.modes.ConsensusMode;
 import multiIPC.modes.IPCMode;
 import multiIPC.modes.SimuMode;
 import multiIPC.nio.NioClient;
-import multiIPC.nio.NioClient.NioSender;
 import multiIPC.nio.RspHandler;
 import port.trace.nio.LocalCommandObserved;
 import port.trace.nio.RemoteCommandExecuted;
@@ -72,7 +71,7 @@ public class Simulation implements PropertyChangeListener {
 	private HalloweenCommandProcessor cp;
 	private HandlerLocal gipc_handler;
 	private HandlerLocal rmi_handler;
-	private NioSender nio_sender;
+	private HandlerLocal nio_handler;
 	
 	public Simulation(HalloweenCommandProcessor cp, String name) throws MalformedURLException, NotBoundException, RemoteException {
 		this.cp = cp;
@@ -87,7 +86,7 @@ public class Simulation implements PropertyChangeListener {
 		gipc_server.join(gipc_handlerImpl);
 		
 		// Start NIO
-		this.nio_sender = NioClient.startInThread(new RspHandler(cp));
+		this.nio_handler = NioClient.startInThread(new RspHandler(this));
 		
 		// Start RMI
 		Registry rmi_registry = LocateRegistry.getRegistry();
@@ -171,7 +170,7 @@ public class Simulation implements PropertyChangeListener {
 			}
 			
 			if (mode != SimuMode.LOCAL) {
-				getActiveHandler().broadcast(cmd, mode);
+				getActiveHandler().broadcast(cmd);
 			} else {
 				updateTimingCount();
 			}
@@ -198,7 +197,7 @@ public class Simulation implements PropertyChangeListener {
 		switch (IPCMode.get()) {
 		default:
 		case NIO:
-			throw new RuntimeException("NIO not done yet!");
+			return nio_handler;
 		case RMI:
 			return rmi_handler;
 		case GIPC:

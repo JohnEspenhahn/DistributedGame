@@ -2,7 +2,6 @@ package multiIPC.nio;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -18,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import multiIPC.modes.ServersSynchronizedMode;
 import multiIPC.modes.SimuMode;
 
 public class NioBroadcastServer implements Runnable {
@@ -36,13 +36,13 @@ public class NioBroadcastServer implements Runnable {
 
 	private EchoWorker worker;
 
-	private Set<SocketChannel> clients = new HashSet();
+	private Set<SocketChannel> clients = new HashSet<SocketChannel>();
 	
 	// A list of PendingChange instances
-	private List<ChangeRequest> pendingChanges = new LinkedList();
+	private List<ChangeRequest> pendingChanges = new LinkedList<ChangeRequest>();
 
 	// Maps a SocketChannel to a list of ByteBuffer instances
-	private Map<SocketChannel, List<ByteBuffer>> pendingData = new HashMap();
+	private Map<SocketChannel, List<ByteBuffer>> pendingData = new HashMap<SocketChannel, List<ByteBuffer>>();
 
 	private NioBroadcastServer(InetAddress hostAddress, int port, EchoWorker worker) throws IOException {
 		this.hostAddress = hostAddress;
@@ -50,29 +50,9 @@ public class NioBroadcastServer implements Runnable {
 		this.selector = this.initSelector();
 		this.worker = worker;
 	}
-
-	public void send(SocketChannel socket, byte[] data) {
-		synchronized (this.pendingChanges) {
-			// Indicate we want the interest ops set changed
-			this.pendingChanges.add(new ChangeRequest(socket, ChangeRequest.CHANGEOPS, SelectionKey.OP_WRITE));
-
-			// And queue the data we want written
-			synchronized (this.pendingData) {
-				List<ByteBuffer> queue = this.pendingData.get(socket);
-				if (queue == null) {
-					queue = new ArrayList();
-					this.pendingData.put(socket, queue);
-				}
-				queue.add(ByteBuffer.wrap(data));
-			}
-		}
-
-		// Finally, wake up our selecting thread so it can make the required changes
-		this.selector.wakeup();
-	}
 	
 	public void broadcast(SocketChannel src, byte[] data) {
-		// System.out.println("Broadcasting: " + new String(data));
+		ServersSynchronizedMode.take();
 		
 		synchronized (this.clients) {
 			Iterator<SocketChannel> clients = this.clients.iterator();
@@ -90,7 +70,7 @@ public class NioBroadcastServer implements Runnable {
 					synchronized (this.pendingData) {
 						List<ByteBuffer> queue = this.pendingData.get(socket);
 						if (queue == null) {
-							queue = new ArrayList();
+							queue = new ArrayList<ByteBuffer>();
 							this.pendingData.put(socket, queue);
 						}
 						queue.add(ByteBuffer.wrap(data));
@@ -154,7 +134,6 @@ public class NioBroadcastServer implements Runnable {
 
 		// Accept the connection and make it non-blocking
 		SocketChannel socketChannel = serverSocketChannel.accept();
-		Socket socket = socketChannel.socket();
 		socketChannel.configureBlocking(false);
 
 		// Register the new SocketChannel with our Selector, indicating
@@ -208,7 +187,7 @@ public class NioBroadcastServer implements Runnable {
 		SocketChannel socketChannel = (SocketChannel) key.channel();
 
 		synchronized (this.pendingData) {
-			List queue = (List) this.pendingData.get(socketChannel);
+			List<ByteBuffer> queue = (List<ByteBuffer>) this.pendingData.get(socketChannel);
 
 			// Write until there's not more data ...
 			while (!queue.isEmpty()) {

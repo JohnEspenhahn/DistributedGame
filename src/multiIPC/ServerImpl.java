@@ -8,6 +8,7 @@ import java.util.List;
 import inputport.rpc.duplex.GIPCRemoteException;
 import multiIPC.modes.ConsensusMode;
 import multiIPC.modes.IPCMode;
+import multiIPC.modes.ServersSynchronizedMode;
 import multiIPC.modes.SimuMode;
 
 public class ServerImpl implements Server {
@@ -24,15 +25,17 @@ public class ServerImpl implements Server {
 		
 		// Tell everyone the mode is changing (asynchronous)
 		Iterator<HandlerRemote> it;
-		it = this.repository.listIterator();
-		while (it.hasNext()) {
-			HandlerRemote r = it.next();
-			if (r.equals(src)) continue;
-			
-			try {
-				r.setSimuModeChanging();
-			} catch (RemoteException e) {
-				it.remove();
+		if (ConsensusMode.requireSimuConsensus) {
+			it = this.repository.listIterator();
+			while (it.hasNext()) {
+				HandlerRemote r = it.next();
+				if (r.equals(src)) continue;
+				
+				try {
+					r.setSimuModeChanging();
+				} catch (RemoteException e) {
+					it.remove();
+				}
 			}
 		}
 		
@@ -48,6 +51,7 @@ public class ServerImpl implements Server {
 				it.remove();
 			}
 		}
+		SimuMode.set(mode);
 		
 		// Atomically send an asynchronous message to every client that the mode has finished changing
 		if (ConsensusMode.requireSimuConsensus) {
@@ -136,20 +140,28 @@ public class ServerImpl implements Server {
 	}
 
 	@Override
-	public boolean broadcast(String msg, SimuMode mode, HandlerRemote src) {
-		Iterator<HandlerRemote> it = this.repository.listIterator();
-		while (it.hasNext()) {
-			HandlerRemote r = it.next();
-			if (mode == SimuMode.ATOMIC || !src.equals(r)) {
-				try {
-					r.executeCommand(msg);
-				} catch (GIPCRemoteException e) {
-					it.remove();
-				} catch (RemoteException e) {
-					it.remove();
+	public boolean broadcast(String msg, HandlerRemote src) {
+		ServersSynchronizedMode.take();
+		
+		try {
+			SimuMode mode = SimuMode.get();
+			Iterator<HandlerRemote> it = this.repository.listIterator();
+			while (it.hasNext()) {
+				HandlerRemote r = it.next();
+				if (mode == SimuMode.ATOMIC || !src.equals(r)) {
+					try {
+						r.executeCommand(msg);
+					} catch (GIPCRemoteException e) {
+						it.remove();
+					} catch (RemoteException e) {
+						it.remove();
+					}
 				}
 			}
+		} finally {
+			ServersSynchronizedMode.release();
 		}
+		
 		return true;
 	}
 }

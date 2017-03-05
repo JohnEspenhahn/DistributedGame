@@ -6,9 +6,11 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.Scanner;
 
 import inputport.rpc.GIPCLocateRegistry;
 import inputport.rpc.GIPCRegistry;
+import multiIPC.modes.ServersSynchronizedMode;
 import multiIPC.nio.NioBroadcastServer;
 
 public class RegistryStarter {
@@ -22,6 +24,18 @@ public class RegistryStarter {
 		NioBroadcastServer.start();
 		
 		System.out.println("Registries started");
+		
+		// Control server settings from terminal
+		Scanner s = new Scanner(System.in);
+		while (s.hasNext()) {
+			String line = s.nextLine();
+			if (line.equals("synchronized")) {
+				ServersSynchronizedMode.setSynchronized(true);
+			} else if (line.equals("unsynchronized")) {
+				ServersSynchronizedMode.setSynchronized(false);
+			}
+		}
+		s.close();
 	}
 	
 	public static void startGIPC(Server server) {

@@ -17,6 +17,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import multiIPC.HandlerLocal;
+import multiIPC.modes.IPCMode;
+import multiIPC.modes.SimuMode;
 import port.trace.nio.SocketChannelConnectFinished;
 import port.trace.nio.SocketChannelConnectInitiated;
 import port.trace.nio.SocketChannelInterestOp;
@@ -25,7 +28,6 @@ import port.trace.nio.SocketChannelRegistered;
 import port.trace.nio.SocketChannelWritten;
 
 public class NioClient implements Runnable {
-	private static final byte[] EMPTY_BYTES = new byte[0];
 	public static final char SEPERATOR = '|';
 	
 	// The host:port combination to connect to
@@ -39,13 +41,13 @@ public class NioClient implements Runnable {
 	private ByteBuffer readBuffer = ByteBuffer.allocate(8192);
 
 	// A list of PendingChange instances
-	private List<ChangeRequest> pendingChanges = new LinkedList();
+	private List<ChangeRequest> pendingChanges = new LinkedList<ChangeRequest>();
 
 	// Maps a SocketChannel to a list of ByteBuffer instances
-	private Map<SocketChannel, List<ByteBuffer>> pendingData = new HashMap();
+	private Map<SocketChannel, List<ByteBuffer>> pendingData = new HashMap<SocketChannel, List<ByteBuffer>>();
 	
 	// Maps a SocketChannel to a RspHandler
-	private Map<SocketChannel, RspHandler> rspHandlers = Collections.synchronizedMap(new HashMap());
+	private Map<SocketChannel, RspHandler> rspHandlers = Collections.synchronizedMap(new HashMap<SocketChannel, RspHandler>());
 	
 	public NioClient(InetAddress hostAddress, int port) throws IOException {
 		this.hostAddress = hostAddress;
@@ -80,7 +82,7 @@ public class NioClient implements Runnable {
 		synchronized (this.pendingData) {
 			List<ByteBuffer> queue = this.pendingData.get(socket);
 			if (queue == null) {
-				queue = new ArrayList();
+				queue = new ArrayList<ByteBuffer>();
 				this.pendingData.put(socket, queue);
 			}
 		}
@@ -147,7 +149,7 @@ public class NioClient implements Runnable {
 				this.selector.select();
 
 				// Iterate over the set of keys for which events are available
-				Iterator selectedKeys = this.selector.selectedKeys().iterator();
+				Iterator<SelectionKey> selectedKeys = this.selector.selectedKeys().iterator();
 				while (selectedKeys.hasNext()) {
 					SelectionKey key = (SelectionKey) selectedKeys.next();
 					selectedKeys.remove();
@@ -324,7 +326,7 @@ public class NioClient implements Runnable {
 		return sender;
     }
 	
-	public class NioSender {
+	public class NioSender implements HandlerLocal {
 		private SocketChannel socket;
 		private NioClient client;
 		
@@ -335,10 +337,12 @@ public class NioClient implements Runnable {
 		
 		/**
 		 * Add data to the send queue for the related socket/client
-		 * @param data The data to add
+		 * @param str The string to send
 		 * @throws RuntimeException If this was not created via NioClient.connect
 		 */
-		public void send(byte[] data) throws RuntimeException {
+		@Override
+		public void broadcast(String str) throws RuntimeException {			
+			byte[] data = str.getBytes();
 			if (data == null || data.length == 0) return;
 			
 			// Queue the data we want written
@@ -361,6 +365,21 @@ public class NioClient implements Runnable {
 
 			// Finally, wake up our selecting thread so it can make the required changes
 			this.client.selector.wakeup();
+		}
+
+		@Override
+		public void sendSimuMode(SimuMode mode) {
+			throw new RuntimeException("NIO does not support SimuMode changing");
+		}
+
+		@Override
+		public void sendIPCMode(IPCMode mode) {
+			throw new RuntimeException("NIO does not support IPCMode changing");
+		}
+
+		@Override
+		public void sendConsensusModes(boolean simu, boolean ipc) {
+			throw new RuntimeException("NIO does not support concensus mode changing");
 		}
 	}
 }

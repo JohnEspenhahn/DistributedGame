@@ -3,19 +3,16 @@ package multiIPC.nio;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import StringProcessors.HalloweenCommandProcessor;
 import multiIPC.Simulation;
 import port.trace.nio.RemoteCommandExecuted;
 
-public class RspHandler implements Runnable {
-	private static final String SEPERATOR_STR = "" + NioClient.SEPERATOR;
-	
+public class RspHandler implements Runnable {	
 	private BlockingQueue<byte[]> rsp;
-	private HalloweenCommandProcessor cp;
+	private Simulation sim;
 	private String partial_cmd;
 	
-	public RspHandler(HalloweenCommandProcessor cp) {
-		this.cp = cp;
+	public RspHandler(Simulation sim) {
+		this.sim = sim;
 		this.rsp = new LinkedBlockingQueue<byte[]>(501);
 		this.partial_cmd = "";
 	}
@@ -38,14 +35,7 @@ public class RspHandler implements Runnable {
 					// Has a full command
 					String cmd = rsp_str.substring(start, end);
 					RemoteCommandExecuted.newCase(this, cmd);
-					this.cp.processCommand(cmd);
-					
-					// For timing debug
-					if (Simulation.WAIT_FOR_CMD > 0) {
-						if (--Simulation.WAIT_FOR_CMD == 0) {
-							System.out.println("Completed in " + (System.currentTimeMillis()-Simulation.TIMING_START) + "ms");
-						}
-					}
+					this.sim.executeCommand(cmd);
 					
 					// Look for next command
 					start = end+1;

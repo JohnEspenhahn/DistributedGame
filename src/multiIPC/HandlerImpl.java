@@ -17,9 +17,9 @@ public class HandlerImpl implements HandlerLocal, HandlerRemote {
 	}
 	
 	@Override
-	public void broadcast(String msg, SimuMode mode) {
+	public void broadcast(String msg) {
 		try {
-			this.server.broadcast(msg, mode, this);
+			this.server.broadcast(msg, this);
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		}

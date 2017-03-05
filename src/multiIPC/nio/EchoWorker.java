@@ -5,7 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class EchoWorker implements Runnable {
-	private List<ServerDataEvent> queue = new LinkedList();
+	private List<ServerDataEvent> queue = new LinkedList<ServerDataEvent>();
 	
 	public void processData(NioBroadcastServer server, SocketChannel socket, byte[] data, int count) {
 		byte[] dataCopy = new byte[count];
