@@ -101,8 +101,8 @@ public class ServerImpl implements Server {
 		}
 		
 		// Atomically send an asynchronous message to every client that the mode has finished changing
+		IPCMode.unsetChanging();
 		if (ConsensusMode.requireIPCConsensus) {
-			IPCMode.unsetChanging();
 			it = this.repository.listIterator();
 			while (it.hasNext()) {
 				HandlerRemote r = it.next();
