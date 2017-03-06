@@ -81,6 +81,8 @@ public class NioBroadcastServer implements Runnable {
 
 		// Finally, wake up our selecting thread so it can make the required changes
 		this.selector.wakeup();
+		
+		ServersSynchronizedMode.release();
 	}
 
 	public void run() {
