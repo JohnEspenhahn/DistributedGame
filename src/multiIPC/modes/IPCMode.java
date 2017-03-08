@@ -8,6 +8,7 @@ public enum IPCMode {
 	
 	public synchronized static boolean takeModeChanging() {
 		if (mode_changing) return false;
+		else if (!ConsensusMode.requireIPCConsensus) return true;
 		
 		System.out.println("ipc mode_changing = true");
 		mode_changing = true;
@@ -35,13 +36,13 @@ public enum IPCMode {
 	}
 	
 	public synchronized static IPCMode get() {
-		if (ConsensusMode.requireIPCConsensus) waitForModeChanging();		
+		waitForModeChanging();		
 		System.out.println("Got ipc mode = " + mode);
 		return mode;
 	}
 	
 	public synchronized static void waitForModeChanging() {
-		while (mode_changing) {
+		while (mode_changing && ConsensusMode.requireIPCConsensus) {
 			try {
 				System.out.println("IPC Mode waiting");
 				IPCMode.class.wait();

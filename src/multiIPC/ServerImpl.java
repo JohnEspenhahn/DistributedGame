@@ -21,7 +21,7 @@ public class ServerImpl implements Server {
 	@Override
 	public void setSimuMode(SimuMode mode, HandlerRemote src) {
 		// Ignore if the mode is already changing
-		if (ConsensusMode.requireSimuConsensus && !SimuMode.takeModeChanging()) return;
+		if (!SimuMode.takeModeChanging()) return;
 		
 		// Tell everyone the mode is changing (asynchronous)
 		Iterator<HandlerRemote> it;
@@ -71,7 +71,7 @@ public class ServerImpl implements Server {
 	@Override
 	public void setIPCMode(IPCMode mode, HandlerRemote src) {
 		// Ignore if the mode is already changing
-		if (ConsensusMode.requireIPCConsensus && !IPCMode.takeModeChanging()) return;
+		if (!IPCMode.takeModeChanging()) return;
 		
 		// Tell everyone the mode is changing (asynchronous)
 		Iterator<HandlerRemote> it;
@@ -102,15 +102,13 @@ public class ServerImpl implements Server {
 		
 		// Atomically send an asynchronous message to every client that the mode has finished changing
 		IPCMode.unsetChanging();
-		if (ConsensusMode.requireIPCConsensus) {
-			it = this.repository.listIterator();
-			while (it.hasNext()) {
-				HandlerRemote r = it.next();
-				try {
-					r.unsetIPCModeChanging();
-				} catch (RemoteException e) {
-					it.remove();
-				}
+		it = this.repository.listIterator();
+		while (it.hasNext()) {
+			HandlerRemote r = it.next();
+			try {
+				r.unsetIPCModeChanging();
+			} catch (RemoteException e) {
+				it.remove();
 			}
 		}
 	}

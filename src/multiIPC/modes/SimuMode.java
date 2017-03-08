@@ -8,6 +8,7 @@ public enum SimuMode {
 	
 	public synchronized static boolean takeModeChanging() {
 		if (mode_changing) return false;
+		else if (!ConsensusMode.requireSimuConsensus) return true;
 		
 		System.out.println("Simu mode_changing = true");
 		mode_changing = true;
@@ -35,13 +36,13 @@ public enum SimuMode {
 	}
 	
 	public synchronized static SimuMode get() {
-		if (ConsensusMode.requireSimuConsensus) waitForModeChanging();		
+		waitForModeChanging();		
 		System.out.println("Got Simu mode = " + mode);
 		return mode;
 	}
 	
 	public synchronized static void waitForModeChanging() {
-		while (mode_changing) {
+		while (mode_changing && ConsensusMode.requireSimuConsensus) {
 			try {
 				System.out.println("Simu Mode waiting");
 				SimuMode.class.wait();

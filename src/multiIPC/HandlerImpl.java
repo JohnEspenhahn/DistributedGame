@@ -33,14 +33,7 @@ public class HandlerImpl implements HandlerLocal, HandlerRemote {
 	@Override
 	public void sendSimuMode(SimuMode mode) {
 		// If not yet notified that the mode is changing, try to change it
-		if (!ConsensusMode.requireSimuConsensus) {
-			try {
-				this.setSimuMode(mode);
-				this.server.setSimuMode(mode, this);
-			} catch (RemoteException e) {
-				e.printStackTrace();
-			}
-		} else if (SimuMode.takeModeChanging()) {
+		if (SimuMode.takeModeChanging()) {
 			try {
 				this.setSimuMode(mode);
 				this.server.setSimuMode(mode, this);
@@ -64,14 +57,7 @@ public class HandlerImpl implements HandlerLocal, HandlerRemote {
 	@Override
 	public void sendIPCMode(IPCMode mode) {
 		// If not yet notified that the mode is changing, try to change it
-		if (!ConsensusMode.requireIPCConsensus) {
-			try {
-				this.setIPCMode(mode);
-				this.server.setIPCMode(mode, this);
-			} catch (RemoteException e) {
-				e.printStackTrace();
-			}
-		} else if (IPCMode.takeModeChanging()) {
+		if (IPCMode.takeModeChanging()) {
 			try {
 				this.setIPCMode(mode);
 				this.server.setIPCMode(mode, this);
