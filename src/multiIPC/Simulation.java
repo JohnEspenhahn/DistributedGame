@@ -9,6 +9,8 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
 
 import StringProcessors.HalloweenCommandProcessor;
@@ -69,30 +71,30 @@ public class Simulation implements PropertyChangeListener {
 	}
 	
 	private HalloweenCommandProcessor cp;
-	private HandlerLocal gipc_handler;
-	private HandlerLocal rmi_handler;
-	private HandlerLocal nio_handler;
+	private Map<IPCMode, HandlerLocal> handlers;
 	
 	public Simulation(HalloweenCommandProcessor cp, String name) throws MalformedURLException, NotBoundException, RemoteException {
 		this.cp = cp;
 		this.cp.addPropertyChangeListener(this);
+		
+		this.handlers = new HashMap<IPCMode, HandlerLocal>();
 		
 		// Start GIPC
 		GIPCRegistry gipc_registry = GIPCLocateRegistry.getRegistry("localhost", RegistryStarter.GIPC_PORT, name);
 		Server gipc_server = (Server) gipc_registry.lookup(Server.class, Simulation.SERVER_OBJ);
 		
 		HandlerImpl gipc_handlerImpl;
-		this.gipc_handler = gipc_handlerImpl = new HandlerImpl(this, gipc_server);
+		this.handlers.put(IPCMode.GIPC, gipc_handlerImpl = new HandlerImpl(this, gipc_server));
 		gipc_server.join(gipc_handlerImpl);
 		
 		// Start NIO
-		this.nio_handler = NioClient.startInThread(new RspHandler(this));
+		this.handlers.put(IPCMode.NIO, NioClient.startInThread(new RspHandler(this)));
 		
 		// Start RMI
 		Registry rmi_registry = LocateRegistry.getRegistry();
 		Server rmi_server = (Server) rmi_registry.lookup(SERVER_OBJ);
 		HandlerImpl rmi_handlerImpl;
-		rmi_handler = rmi_handlerImpl = new HandlerImpl(this, rmi_server);
+		this.handlers.put(IPCMode.RMI, rmi_handlerImpl = new HandlerImpl(this, rmi_server));
 		Remote stub = UnicastRemoteObject.exportObject(rmi_handlerImpl, 0);
 		rmi_server.join((HandlerRemote) stub);
 		
@@ -194,14 +196,6 @@ public class Simulation implements PropertyChangeListener {
 	}
 	
 	protected HandlerLocal getActiveHandler() {
-		switch (IPCMode.get()) {
-		default:
-		case NIO:
-			return nio_handler;
-		case RMI:
-			return rmi_handler;
-		case GIPC:
-			return gipc_handler;
-		}
+		return this.handlers.get(IPCMode.get());
 	}
 }
