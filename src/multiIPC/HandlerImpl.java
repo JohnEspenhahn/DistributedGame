@@ -35,7 +35,7 @@ public class HandlerImpl implements HandlerLocal, HandlerRemote {
 		// If not yet notified that the mode is changing, try to change it
 		if (SimuMode.takeModeChanging()) {
 			try {
-				this.setSimuMode(mode);
+				if (ConsensusMode.requireSimuConsensus) this.setSimuMode(mode);
 				this.server.setSimuMode(mode, this);
 				SimuMode.waitForModeChanging();
 			} catch (RemoteException e) {

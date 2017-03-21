@@ -91,7 +91,8 @@ public class ServerImpl implements Server {
 		it = this.repository.listIterator();
 		while (it.hasNext()) {
 			HandlerRemote r = it.next();
-			if (r.equals(src)) continue;
+			if (ConsensusMode.requireSimuConsensus && r.equals(src)) 
+				continue;
 			
 			try {
 				r.setIPCMode(mode);
@@ -138,7 +139,7 @@ public class ServerImpl implements Server {
 	}
 
 	@Override
-	public boolean broadcast(String msg, HandlerRemote src) {
+	public void broadcast(String msg, HandlerRemote src) {
 		ServersSynchronizedMode.take();
 		
 		try {
@@ -159,7 +160,5 @@ public class ServerImpl implements Server {
 		} finally {
 			ServersSynchronizedMode.release();
 		}
-		
-		return true;
 	}
 }
