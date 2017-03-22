@@ -297,11 +297,11 @@ public class NioClient implements Runnable {
 	 * @param handler The handler object
 	 * @return An object which can be used to send data to the newly created main socket of the client
 	 */
-	public static NioSender startInThread(final RspHandler handler) {
+	public static NioSender startInThread(final String ip, final RspHandler handler) {
 		NioSender sender = null;
 		try {
 			// Start client listening in another thread
-			NioClient client = new NioClient(InetAddress.getByName("localhost"), 9090);
+			NioClient client = new NioClient(InetAddress.getByName(ip), 9090);
 			Thread t = new Thread(client);
 			t.setName("selector");
 			t.setDaemon(true);
@@ -369,12 +369,12 @@ public class NioClient implements Runnable {
 
 		@Override
 		public void sendSimuMode(SimuMode mode) {
-			throw new RuntimeException("NIO does not support SimuMode changing");
+			SimuMode.set(mode);
 		}
 
 		@Override
 		public void sendIPCMode(IPCMode mode) {
-			throw new RuntimeException("NIO does not support IPCMode changing");
+			IPCMode.set(mode);
 		}
 
 		@Override

@@ -30,9 +30,6 @@ import util.trace.Tracer;
 public class Simulation implements PropertyChangeListener {
 	public static final String SERVER_OBJ = "ServerImpl";
 	
-	public static long TIMING_START = 0;
-	public static int WAIT_FOR_CMD = 0;
-	
 	public static final String SIMULATION1_PREFIX = "1:";
 	public static int SIMULATION_COMMAND_Y_OFFSET = 0;
 	public static int SIMULATION_WIDTH = 500;
@@ -53,14 +50,15 @@ public class Simulation implements PropertyChangeListener {
 		TraceableInfo.setPrintTraceable(true);
 		// show the current time in each log item
 		TraceableInfo.setPrintTime(true);
-		
+
 		HalloweenCommandProcessor cp = BeauAndersonFinalProject.createSimulation(
 				SIMULATION1_PREFIX, 0, SIMULATION_COMMAND_Y_OFFSET, SIMULATION_WIDTH, SIMULATION_HEIGHT, 100, 100);
 		cp.setConnectedToSimulation(false);
 		
 		// Command processor
 		try {
-			new Simulation(cp, name);
+			Simulation sim = new Simulation(cp, name, "localhost");
+			sim.startCommandLineThread();
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		} catch (NotBoundException e) {
@@ -73,14 +71,14 @@ public class Simulation implements PropertyChangeListener {
 	private HalloweenCommandProcessor cp;
 	private Map<IPCMode, HandlerLocal> handlers;
 	
-	public Simulation(HalloweenCommandProcessor cp, String name) throws MalformedURLException, NotBoundException, RemoteException {
+	public Simulation(HalloweenCommandProcessor cp, String name, String ip) throws MalformedURLException, NotBoundException, RemoteException {
 		this.cp = cp;
 		this.cp.addPropertyChangeListener(this);
 		
 		this.handlers = new HashMap<IPCMode, HandlerLocal>();
 		
 		// Start GIPC
-		GIPCRegistry gipc_registry = GIPCLocateRegistry.getRegistry("localhost", RegistryStarter.GIPC_PORT, name);
+		GIPCRegistry gipc_registry = GIPCLocateRegistry.getRegistry(ip, RegistryStarter.GIPC_PORT, name);
 		Server gipc_server = (Server) gipc_registry.lookup(Server.class, Simulation.SERVER_OBJ);
 		
 		HandlerImpl gipc_handlerImpl;
@@ -88,18 +86,15 @@ public class Simulation implements PropertyChangeListener {
 		gipc_server.join(gipc_handlerImpl);
 		
 		// Start NIO
-		this.handlers.put(IPCMode.NIO, NioClient.startInThread(new RspHandler(this)));
+		this.handlers.put(IPCMode.NIO, NioClient.startInThread(ip, new RspHandler(this)));
 		
 		// Start RMI
-		Registry rmi_registry = LocateRegistry.getRegistry();
+		Registry rmi_registry = LocateRegistry.getRegistry(ip);
 		Server rmi_server = (Server) rmi_registry.lookup(SERVER_OBJ);
 		HandlerImpl rmi_handlerImpl;
 		this.handlers.put(IPCMode.RMI, rmi_handlerImpl = new HandlerImpl(this, rmi_server));
 		Remote stub = UnicastRemoteObject.exportObject(rmi_handlerImpl, 0);
 		rmi_server.join((HandlerRemote) stub);
-		
-		// Set GIPC as active handler
-		startCommandLineThread();
 	}
 	
 	public void startCommandLineThread() {	
@@ -128,12 +123,7 @@ public class Simulation implements PropertyChangeListener {
 					} else if (line.equalsIgnoreCase("time")) {
 						if (cp != null) {
 							final int moves = (in.hasNextInt() ? in.nextInt() : 10);
-							WAIT_FOR_CMD = moves;
-							TIMING_START = System.currentTimeMillis();
-							System.out.println("Timing " + moves + " moves");
-							for (int i = 0; i < moves; i++) {
-								cp.setInputString("move 1 0");
-							}
+							runTiming(moves);
 						} else {
 							System.err.println("Timing not supported without command processor!");
 						}
@@ -152,6 +142,15 @@ public class Simulation implements PropertyChangeListener {
 		cmd_thread.setName("cmdline");
 		cmd_thread.setDaemon(true);
 		cmd_thread.run();
+	}
+	
+	public void runTiming(int moves) {		
+		long TIMING_START = System.currentTimeMillis();
+		System.out.println("Timing " + moves + " moves");
+		for (int i = 0; i < moves; i++) {
+			cp.setInputString(String.format("move %d 0", Math.random() >= 0.5 ? 1 : -1));
+		}
+		System.out.println("Finished in " + (System.currentTimeMillis() - TIMING_START) + " ms");
 	}
 
 	@Override
@@ -173,26 +172,14 @@ public class Simulation implements PropertyChangeListener {
 			
 			if (mode != SimuMode.LOCAL) {
 				getActiveHandler().broadcast(cmd);
-			} else {
-				updateTimingCount();
 			}
 		}
 	}
 	
 	public void executeCommand(String cmd) {
-		System.err.println("Executed " + cmd);
+		// System.err.println("Executed " + cmd);
 		RemoteCommandExecuted.newCase(this, cmd);
 		this.cp.processCommand(cmd);
-		
-		updateTimingCount();
-	}
-
-	private void updateTimingCount() {
-		if (Simulation.WAIT_FOR_CMD > 0) {
-			if (--Simulation.WAIT_FOR_CMD == 0) {
-				System.out.println("Completed in " + (System.currentTimeMillis() - Simulation.TIMING_START) + "ms");
-			}
-		}
 	}
 	
 	protected HandlerLocal getActiveHandler() {

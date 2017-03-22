@@ -16,12 +16,12 @@ public enum IPCMode {
 	}
 	
 	public synchronized static void setChanging() {
-		System.out.println("ipc mode_changing = true");
+		// System.out.println("ipc mode_changing = true");
 		mode_changing = true;
 	}
 	
 	public synchronized static void unsetChanging() {
-		System.out.println("ipc mode_changing = false");
+		// System.out.println("ipc mode_changing = false");
 		mode_changing = false;
 		IPCMode.class.notifyAll();
 	}
@@ -37,16 +37,16 @@ public enum IPCMode {
 	
 	public synchronized static IPCMode get() {
 		waitForModeChanging();		
-		System.out.println("Got ipc mode = " + mode);
+		// System.out.println("Got ipc mode = " + mode);
 		return mode;
 	}
 	
 	public synchronized static void waitForModeChanging() {
 		while (mode_changing && ConsensusMode.requireIPCConsensus) {
 			try {
-				System.out.println("IPC Mode waiting");
+				//System.out.println("IPC Mode waiting");
 				IPCMode.class.wait();
-				System.out.println("Done IPC mode waiting");
+				//System.out.println("Done IPC mode waiting");
 			} catch (InterruptedException e) { }
 		}
 	}

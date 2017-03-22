@@ -81,8 +81,6 @@ public class NioBroadcastServer implements Runnable {
 
 		// Finally, wake up our selecting thread so it can make the required changes
 		this.selector.wakeup();
-		
-		ServersSynchronizedMode.release();
 	}
 
 	public void run() {
@@ -188,6 +186,7 @@ public class NioBroadcastServer implements Runnable {
 	private void write(SelectionKey key) throws IOException {
 		SocketChannel socketChannel = (SocketChannel) key.channel();
 
+		boolean noPendingData = true;
 		synchronized (this.pendingData) {
 			List<ByteBuffer> queue = (List<ByteBuffer>) this.pendingData.get(socketChannel);
 
@@ -208,7 +207,17 @@ public class NioBroadcastServer implements Runnable {
 				// data.
 				key.interestOps(SelectionKey.OP_READ);
 			}
+			
+			// Check if pendingData is empty
+			for (List<ByteBuffer> bb: this.pendingData.values()) {
+				if (bb != null && !bb.isEmpty()) {
+					noPendingData = false;
+					break;
+				}
+			}
 		}
+		
+		if (noPendingData) ServersSynchronizedMode.release();
 	}
 
 	private Selector initSelector() throws IOException {

@@ -1,6 +1,7 @@
 package multiIPC;
 
 import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -11,10 +12,11 @@ import multiIPC.modes.IPCMode;
 import multiIPC.modes.ServersSynchronizedMode;
 import multiIPC.modes.SimuMode;
 
-public class ServerImpl implements Server {
+public class ServerImpl extends UnicastRemoteObject implements Server {
+	private static final long serialVersionUID = 8479972969340308906L;
 	private List<HandlerRemote> repository;
 	
-	public ServerImpl() {
+	public ServerImpl() throws RemoteException {
 		this.repository = new ArrayList<HandlerRemote>();
 	}
 

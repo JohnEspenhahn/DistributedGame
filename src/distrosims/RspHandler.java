@@ -21,7 +21,7 @@ public class RspHandler implements Runnable {
 	
 	public boolean handleResponse(byte[] rsp) {
 		boolean accepted = this.rsp.offer(rsp);
-		if (!accepted) System.err.println("Dropped message!");
+		// if (!accepted) System.err.println("Dropped message!");
 		return false;
 	}
 	

@@ -10,18 +10,18 @@ public enum SimuMode {
 		if (mode_changing) return false;
 		else if (!ConsensusMode.requireSimuConsensus) return true;
 		
-		System.out.println("Simu mode_changing = true");
+		// System.out.println("Simu mode_changing = true");
 		mode_changing = true;
 		return true;
 	}
 	
 	public synchronized static void setModeChanging() {
-		System.out.println("Simu mode_changing = true");
+		// System.out.println("Simu mode_changing = true");
 		SimuMode.mode_changing = true;
 	}
 	
 	public synchronized static void unsetModeChanging() {
-		System.out.println("Simu mode_changing = false");
+		// System.out.println("Simu mode_changing = false");
 		SimuMode.mode_changing = false;
 		SimuMode.class.notifyAll();
 	}
@@ -37,16 +37,16 @@ public enum SimuMode {
 	
 	public synchronized static SimuMode get() {
 		waitForModeChanging();		
-		System.out.println("Got Simu mode = " + mode);
+		// System.out.println("Got Simu mode = " + mode);
 		return mode;
 	}
 	
 	public synchronized static void waitForModeChanging() {
 		while (mode_changing && ConsensusMode.requireSimuConsensus) {
 			try {
-				System.out.println("Simu Mode waiting");
+				// System.out.println("Simu Mode waiting");
 				SimuMode.class.wait();
-				System.out.println("Simu Done mode waiting");
+				// System.out.println("Simu Done mode waiting");
 			} catch (InterruptedException e) { }
 		}
 	}

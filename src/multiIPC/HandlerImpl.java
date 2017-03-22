@@ -56,16 +56,7 @@ public class HandlerImpl implements HandlerLocal, HandlerRemote {
 	
 	@Override
 	public void sendIPCMode(IPCMode mode) {
-		// If not yet notified that the mode is changing, try to change it
-		if (IPCMode.takeModeChanging()) {
-			try {
-				this.setIPCMode(mode);
-				this.server.setIPCMode(mode, this);
-				IPCMode.waitForModeChanging();
-			} catch (RemoteException e) {
-				e.printStackTrace();
-			}
-		}
+		this.setIPCMode(mode);
 	}
 	
 	@Override
