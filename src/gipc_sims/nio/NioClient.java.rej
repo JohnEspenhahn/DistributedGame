@@ -1,0 +1,16 @@
+diff a/src/multiIPC/nio/NioClient.java b/src/multiIPC/nio/NioClient.java	(rejected hunks)
+@@ -369,12 +369,12 @@
+ 
+ 		@Override
+ 		public void sendSimuMode(SimuMode mode) {
+-			throw new RuntimeException("NIO does not support SimuMode changing");
++			SimuMode.set(mode);
+ 		}
+ 
+ 		@Override
+ 		public void sendIPCMode(IPCMode mode) {
+-			throw new RuntimeException("NIO does not support IPCMode changing");
++			IPCMode.set(mode);
+ 		}
+ 
+ 		@Override
