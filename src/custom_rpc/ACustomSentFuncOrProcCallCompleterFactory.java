@@ -11,7 +11,7 @@ public class ACustomSentFuncOrProcCallCompleterFactory
 	@Override
 	public DuplexSentCallCompleter 
 	    createDuplexSentCallCompleter(DuplexRPCInputPort aPort, LocalRemoteReferenceTranslator aTranslator) {
-		return new ACustomSentCallCompleter(aPort, aTranslator);
+		return new ACustomSentFuncOrProcCallCompleter(aPort, aTranslator);
 	}
 }
 

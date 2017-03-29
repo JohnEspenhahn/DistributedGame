@@ -15,7 +15,7 @@ public class ACustomCounterClient extends AMultiLayerCounterClient{
 //		DuplexReceivedCallInvokerSelector.setReceivedCallInvokerFactory(
 //				new AnAsynchronousCustomDuplexReceivedCallInvokerFactory());
 		DuplexSentCallCompleterSelector.setDuplexSentCallCompleterFactory(
-				new ACustomSentCallCompleterFactory());
+				new ACustomSentFuncOrProcCallCompleterFactory());
 		DuplexObjectInputPortSelector.setDuplexInputPortFactory(
 				new ACustomDuplexObjectInputPortFactory());
 		SerializerSelector.setSerializerFactory(new ACustomSerializerFactory());	
