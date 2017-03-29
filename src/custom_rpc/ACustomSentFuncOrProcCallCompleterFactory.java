@@ -5,7 +5,7 @@ import inputport.rpc.duplex.DuplexSentCallCompleter;
 import inputport.rpc.duplex.DuplexSentCallCompleterFactory;
 import inputport.rpc.duplex.LocalRemoteReferenceTranslator;
 
-public class ACustomSentCallCompleterFactory  
+public class ACustomSentFuncOrProcCallCompleterFactory  
              implements DuplexSentCallCompleterFactory {
 
 	@Override

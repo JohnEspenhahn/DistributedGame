@@ -12,21 +12,19 @@ import inputport.datacomm.duplex.object.explicitreceive.ReceiveReturnMessage;
 import port.trace.objects.ReceivedMessageDequeued;
 import port.trace.objects.ReceivedMessageQueueCreated;
 
-public class ACustomDuplexObjectClientInputPort extends ADuplexObjectClientInputPort implements QueueProvider {
-	private static final int QUEUE_SIZE = 200;
-	
-	private BlockingQueue<Object> queue;
+public class ACustomDuplexObjectClientInputPort extends ADuplexObjectClientInputPort implements QueueProvider {	
+	private BlockingQueueWrapper queue;
 	
 	public ACustomDuplexObjectClientInputPort(
 			DuplexClientInputPort<ByteBuffer> aBBClientInputPort) {
 		super(aBBClientInputPort);
 		
-		this.queue = new ArrayBlockingQueue<Object>(QUEUE_SIZE);
+		this.queue = new BlockingQueueWrapper();
 		ReceivedMessageQueueCreated.newCase(this, this.queue, "Created client input port queue");
 	}
 	
 	@Override
-	public BlockingQueue<Object> getQueue(String remoteClientName) {
+	public BlockingQueueWrapper getQueueToNotify(String remoteClientName) {
 		return queue;
 	}
 	
@@ -38,17 +36,9 @@ public class ACustomDuplexObjectClientInputPort extends ADuplexObjectClientInput
 	@Override
 	public ReceiveReturnMessage<Object> receive(String aSource) {		
 		System.err.println("Receive started");
-		Object obj;
-		while (true) {
-			try {
-				obj = queue.take();
-				break;
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
+		Object obj = queue.take();
 		ReceivedMessageDequeued.newCase(this, queue, "take");
-		ReceiveReturnMessage<Object> retVal = new AReceiveReturnMessage(aSource, obj); // TODO how to deserialize?
+		ReceiveReturnMessage<Object> retVal = new AReceiveReturnMessage<Object>(aSource, obj);
 		System.out.println (aSource + "<-" + retVal);
 		return retVal;
 	}

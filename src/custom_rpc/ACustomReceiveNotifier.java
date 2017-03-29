@@ -1,7 +1,5 @@
 package custom_rpc;
 
-import java.util.concurrent.BlockingQueue;
-
 import inputport.datacomm.AReceiveRegistrarAndNotifier;
 import port.trace.objects.ReceivedMessageQueued;
 
@@ -18,7 +16,7 @@ public class ACustomReceiveNotifier extends AReceiveRegistrarAndNotifier<Object>
 		System.out.println (aSource + "->" + aMessage);
 		super.notifyPortReceive(aSource, aMessage);
 		
-		BlockingQueue<Object> queue = this.qProvider.getQueue(aSource);
+		BlockingQueueWrapper queue = this.qProvider.getQueueToNotify(aSource);
 		
 		while (true) {
 			try {

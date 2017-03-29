@@ -5,8 +5,7 @@ import inputport.datacomm.duplex.object.DuplexObjectInputPortSelector;
 import inputport.datacomm.duplex.object.explicitreceive.ReceiveReturnMessage;
 import inputport.rpc.duplex.DuplexReceivedCallInvokerSelector;
 import inputport.rpc.duplex.DuplexSentCallCompleterSelector;
-import inputport.rpc.duplex.SynchronousDuplexReceivedCallInvokerSelector;
-import port.trace.rpc.RPCTraceUtility;
+import port.trace.objects.ObjectTraceUtility;
 import serialization.SerializerSelector;
 
 public class ACustomCounterClient extends AMultiLayerCounterClient{
@@ -24,6 +23,7 @@ public class ACustomCounterClient extends AMultiLayerCounterClient{
 	public static void main (String[] args) {
 //		BufferTraceUtility.setTracing();
 //		RPCTraceUtility.setTracing();
+		ObjectTraceUtility.setTracing();
 		setFactories();
 		init("Client 1");
 		setPort();
@@ -31,7 +31,7 @@ public class ACustomCounterClient extends AMultiLayerCounterClient{
 		sendObjects();
 		doOperations();	
 		while (true) {
-			ReceiveReturnMessage aReceivedMessage = gipcRegistry.getRPCClientPort().receive();
+			ReceiveReturnMessage<Object> aReceivedMessage = gipcRegistry.getRPCClientPort().receive();
 			if (aReceivedMessage == null) {
 				break;
 			}

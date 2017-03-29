@@ -4,6 +4,6 @@ import java.util.concurrent.BlockingQueue;
 
 public interface QueueProvider {
 	
-	BlockingQueue<Object> getQueue(String aSource);
+	BlockingQueueWrapper getQueueToNotify(String aSource);
 
 }
