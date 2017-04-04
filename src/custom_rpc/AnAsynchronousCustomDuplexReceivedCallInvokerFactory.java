@@ -8,13 +8,11 @@ import inputport.rpc.duplex.AnAsynchronousSingleThreadDuplexReceivedCallInvoker;
 import inputport.rpc.duplex.DuplexReceivedCallInvoker;
 import inputport.rpc.duplex.LocalRemoteReferenceTranslator;
 
-public class AnAsynchronousCustomDuplexReceivedCallInvokerFactory 
-	extends ACustomDuplexReceivedCallInvokerFactory{
+public class AnAsynchronousCustomDuplexReceivedCallInvokerFactory extends ACustomDuplexReceivedCallInvokerFactory {
 	@Override
-	public DuplexReceivedCallInvoker createDuplexReceivedCallInvoker(
-			LocalRemoteReferenceTranslator aRemoteHandler,
+	public DuplexReceivedCallInvoker createDuplexReceivedCallInvoker(LocalRemoteReferenceTranslator aRemoteHandler,
 			DuplexInputPort<Object> aReplier, RPCRegistry anRPCRegistry) {
-		return new 
-				AnAsynchronousSingleThreadDuplexReceivedCallInvoker(super.createDuplexReceivedCallInvoker(aRemoteHandler, aReplier, anRPCRegistry));
+		return new AnAsynchronousSingleThreadDuplexReceivedCallInvoker(
+				super.createDuplexReceivedCallInvoker(aRemoteHandler, aReplier, anRPCRegistry));
 	}
 }

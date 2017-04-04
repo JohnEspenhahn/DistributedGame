@@ -14,7 +14,7 @@ public class ACustomDuplexReceivedCallInvoker extends ADuplexReceivedCallInvoker
 	}
 	
 	protected void handleProcedureReturn(String aSender, Exception e) {
-		System.out.println("Procedure call returning from:" + aSender + " with exception:" + e);
+//		System.out.println("Procedure call returning from:" + aSender + " with exception:" + e);
 		replyPossiblyTransformedMethodReturnValue(aSender, null, null, e);
 	}
 	

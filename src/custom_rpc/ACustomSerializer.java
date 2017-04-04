@@ -8,13 +8,13 @@ public class ACustomSerializer extends ASimpleSerializer {
 	@Override
 	public synchronized Object objectFromInputBuffer(ByteBuffer inputBuffer) {
 		Object retVal = super.objectFromInputBuffer(inputBuffer);
-		System.out.println (inputBuffer + "-->" + retVal);
+//		System.out.println (inputBuffer + "-->" + retVal);
 		return retVal;
 	}
 	@Override
 	public ByteBuffer outputBufferFromObject(Object object) {
 		ByteBuffer retVal = super.outputBufferFromObject(object);
-		System.out.println(object + "-->" + retVal);
+//		System.out.println(object + "-->" + retVal);
 		return retVal;
 	}
 	

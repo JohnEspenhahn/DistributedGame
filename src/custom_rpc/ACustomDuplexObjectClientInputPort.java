@@ -1,8 +1,6 @@
 package custom_rpc;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 
 import inputport.datacomm.ReceiveRegistrarAndNotifier;
 import inputport.datacomm.duplex.DuplexClientInputPort;
@@ -19,7 +17,7 @@ public class ACustomDuplexObjectClientInputPort extends ADuplexObjectClientInput
 			DuplexClientInputPort<ByteBuffer> aBBClientInputPort) {
 		super(aBBClientInputPort);
 		
-		this.queue = new BlockingQueueWrapper();
+		this.queue = new BlockingQueueWrapper("Client");
 		ReceivedMessageQueueCreated.newCase(this, this.queue, "Created client input port queue");
 	}
 	
@@ -35,11 +33,10 @@ public class ACustomDuplexObjectClientInputPort extends ADuplexObjectClientInput
 	
 	@Override
 	public ReceiveReturnMessage<Object> receive(String aSource) {		
-		System.err.println("Receive started");
+//		System.err.println("Receive started");
 		Object obj = queue.take();
-		ReceivedMessageDequeued.newCase(this, queue, "take");
+		ReceivedMessageDequeued.newCase(this, queue, "Got message from queue");
 		ReceiveReturnMessage<Object> retVal = new AReceiveReturnMessage<Object>(aSource, obj);
-		System.out.println (aSource + "<-" + retVal);
 		return retVal;
 	}
 }

@@ -10,6 +10,7 @@ import inputport.datacomm.duplex.object.ADuplexObjectServerInputPort;
 import inputport.datacomm.duplex.object.explicitreceive.AReceiveReturnMessage;
 import inputport.datacomm.duplex.object.explicitreceive.ReceiveReturnMessage;
 import port.trace.objects.ReceivedMessageDequeued;
+import port.trace.objects.ReceivedMessageQueueCreated;
 
 public class ACustomDuplexObjectServerInputPort extends ADuplexObjectServerInputPort implements QueueProvider {	
 	private Map<String, BlockingQueueWrapper> queues;
@@ -20,14 +21,17 @@ public class ACustomDuplexObjectServerInputPort extends ADuplexObjectServerInput
 		super(aBBDuplexServerInputPort);
 		
 		this.queues = new HashMap<String, BlockingQueueWrapper>();
-		this.genericQueue = new BlockingQueueWrapper();
+		this.genericQueue = new BlockingQueueWrapper("Generic");
 	}
 	
 	@Override
 	public BlockingQueueWrapper getQueueToNotify(String remoteClientName) {
 		BlockingQueueWrapper queue = getQueue(remoteClientName);		
-		if (queue.isWaiting()) return queue;
-		else return genericQueue;
+		if (queue.isWaiting()) {
+			return queue;
+		} else {
+			return genericQueue;
+		}
 	}
 	
 	private BlockingQueueWrapper getQueue(String remoteClientName) {
@@ -37,8 +41,9 @@ public class ACustomDuplexObjectServerInputPort extends ADuplexObjectServerInput
 		
 		BlockingQueueWrapper queue = queues.get(remoteClientName);		
 		if (queue == null) {
-			queue = new BlockingQueueWrapper();
+			queue = new BlockingQueueWrapper(remoteClientName);
 			queues.put(remoteClientName, queue);
+			ReceivedMessageQueueCreated.newCase(this, queue, "client " + remoteClientName);
 		}
 		
 		return queue;
@@ -50,20 +55,12 @@ public class ACustomDuplexObjectServerInputPort extends ADuplexObjectServerInput
 	}
 	
 	@Override
-	public ReceiveReturnMessage<Object> receive() {
-		return receive(null);
-	}
-	
-	@Override
 	public ReceiveReturnMessage<Object> receive(String aSource) {
-		System.err.println("Receive started");
-		
 		BlockingQueueWrapper queue = getQueue(aSource);
 		
+		ReceivedMessageDequeued.newCase(this, queue, "Taking message from queue " + queue.getName());
 		Object obj = queue.take();
-		ReceivedMessageDequeued.newCase(this, queue, "take");
 		ReceiveReturnMessage<Object> retVal = new AReceiveReturnMessage<Object>(aSource, obj);
-		System.out.println (aSource + "<-" + retVal);
 		return retVal;
 	}
 

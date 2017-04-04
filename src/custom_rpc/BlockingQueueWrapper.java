@@ -6,12 +6,18 @@ import java.util.concurrent.BlockingQueue;
 public class BlockingQueueWrapper {
 	private static final int QUEUE_SIZE = 200;
 
+	private String name;
 	private BlockingQueue<Object> queue;
 	private int waiting;
 	
-	public BlockingQueueWrapper() {
+	public BlockingQueueWrapper(String name) {
+		this.name = name;
 		this.queue = new ArrayBlockingQueue<Object>(QUEUE_SIZE);
 		this.waiting = 0;
+	}
+	
+	public String getName() {
+		return this.name;
 	}
 	
 	public boolean isWaiting() {
