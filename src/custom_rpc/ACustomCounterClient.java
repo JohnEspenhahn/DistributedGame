@@ -1,6 +1,5 @@
 package custom_rpc;
 
-import java.rmi.RemoteException;
 import java.util.Scanner;
 
 import examples.gipc.counter.layers.AMultiLayerCounterClient;

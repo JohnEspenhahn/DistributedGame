@@ -2,7 +2,6 @@ package custom_rpc;
 
 import examples.gipc.counter.layers.AMultiLayerCounterServer;
 import inputport.datacomm.duplex.object.explicitreceive.ReceiveReturnMessage;
-import port.trace.objects.ObjectTraceUtility;
 
 public class ACustomCounterServer extends AMultiLayerCounterServer {
 	public static void setFactories() {
