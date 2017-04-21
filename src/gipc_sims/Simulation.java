@@ -13,6 +13,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
+import org.espenhahn.serializer.MySerializerFactory;
+
 import StringProcessors.HalloweenCommandProcessor;
 import gipc_sims.modes.ConsensusMode;
 import gipc_sims.modes.IPCMode;
@@ -24,6 +26,8 @@ import inputport.rpc.GIPCRegistry;
 import main.BeauAndersonFinalProject;
 import port.trace.nio.LocalCommandObserved;
 import port.trace.nio.RemoteCommandExecuted;
+import port.trace.serialization.extensible.ExtensibleSerializationTraceUtility;
+import serialization.SerializerSelector;
 import util.trace.TraceableInfo;
 import util.trace.Tracer;
 
@@ -51,6 +55,8 @@ public class Simulation implements PropertyChangeListener {
 		TraceableInfo.setPrintTraceable(true);
 		// show the current time in each log item
 		TraceableInfo.setPrintTime(true);
+		
+		// ExtensibleSerializationTraceUtility.setTracing();
 
 		HalloweenCommandProcessor cp = BeauAndersonFinalProject.createSimulation(
 				SIMULATION1_PREFIX, 0, SIMULATION_COMMAND_Y_OFFSET, SIMULATION_WIDTH, SIMULATION_HEIGHT, 100, 100);
@@ -79,6 +85,7 @@ public class Simulation implements PropertyChangeListener {
 		this.handlers = new HashMap<IPCMode, HandlerLocal>();
 		
 		// Start GIPC
+		SerializerSelector.setSerializerFactory(new MySerializerFactory());
 		GIPCRegistry gipc_registry = GIPCLocateRegistry.getRegistry(ip, RegistryStarter.GIPC_PORT, name);
 		Server gipc_server = (Server) gipc_registry.lookup(Server.class, Simulation.SERVER_OBJ);
 		

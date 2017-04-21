@@ -1,24 +1,26 @@
 package gipc_sims;
 
-import java.net.MalformedURLException;
-import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.Scanner;
+
+import org.espenhahn.serializer.MySerializerFactory;
 
 import gipc_sims.modes.ServersSynchronizedMode;
 import gipc_sims.nio.NioBroadcastServer;
 import inputport.datacomm.simplex.buffer.nio.AScatterGatherSelectionManager;
 import inputport.rpc.GIPCLocateRegistry;
 import inputport.rpc.GIPCRegistry;
+import port.trace.serialization.extensible.ExtensibleSerializationTraceUtility;
+import serialization.SerializerSelector;
 
 public class RegistryStarter {
 	public static final int GIPC_PORT = 15247;
 	public static final int RMI_PORT = 1099;
 
 	public static void main(String[] args) {		
-		try {
+		try {			
 			// Start different IPC modes, each with their own server stack
 			RegistryStarter.startGIPC(new ServerImpl());
 			RegistryStarter.startRMI(new ServerImpl());
@@ -43,6 +45,9 @@ public class RegistryStarter {
 	}
 	
 	public static void startGIPC(Server server) {
+		// ExtensibleSerializationTraceUtility.setTracing();
+		SerializerSelector.setSerializerFactory(new MySerializerFactory());
+		
 		AScatterGatherSelectionManager.setMaxOutstandingWrites(500);
 		GIPCRegistry reg = GIPCLocateRegistry.createRegistry(GIPC_PORT);
 		reg.rebind(Simulation.SERVER_OBJ, server);
