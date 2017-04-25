@@ -16,6 +16,7 @@ import java.util.Scanner;
 import org.espenhahn.serializer.MySerializerFactory;
 
 import StringProcessors.HalloweenCommandProcessor;
+import consensus.dewan.SimulationConsensusLauncher;
 import gipc_sims.modes.ConsensusMode;
 import gipc_sims.modes.IPCMode;
 import gipc_sims.modes.SimuMode;
@@ -26,7 +27,6 @@ import inputport.rpc.GIPCRegistry;
 import main.BeauAndersonFinalProject;
 import port.trace.nio.LocalCommandObserved;
 import port.trace.nio.RemoteCommandExecuted;
-import port.trace.serialization.extensible.ExtensibleSerializationTraceUtility;
 import serialization.SerializerSelector;
 import util.trace.TraceableInfo;
 import util.trace.Tracer;
@@ -103,6 +103,16 @@ public class Simulation implements PropertyChangeListener {
 		this.handlers.put(IPCMode.RMI, rmi_handlerImpl = new HandlerImpl(this, rmi_server));
 		Remote stub = UnicastRemoteObject.exportObject(rmi_handlerImpl, 0);
 		rmi_server.join((HandlerRemote) stub);
+		
+		// Start consensus object
+		short port = (short) ((name.hashCode() % 2000) + 7000);
+		SimulationConsensusLauncher scl = SimulationConsensusLauncher.get(this, "" + port, port);
+		IPCMode.scl = scl; // Need to store for IPC to update
+		this.handlers.put(IPCMode.ATOMIC_ASYNC, scl);
+		this.handlers.put(IPCMode.ATOMIC_SYNC, scl);
+		this.handlers.put(IPCMode.NONATOMIC_ASYNC, scl);
+		this.handlers.put(IPCMode.NONATOMIC_SYNC, scl);
+		this.handlers.put(IPCMode.PAXOS, scl);
 	}
 	
 	public void startCommandLineThread() {	
@@ -128,6 +138,16 @@ public class Simulation implements PropertyChangeListener {
 						getHandler(IPCMode.RMI).sendConsensusModes(!ConsensusMode.requireSimuConsensus, ConsensusMode.requireIPCConsensus);
 					} else if (line.equalsIgnoreCase("ipcconsensus")) {
 						getHandler(IPCMode.RMI).sendConsensusModes(ConsensusMode.requireSimuConsensus, !ConsensusMode.requireIPCConsensus);
+					} else if (line.equalsIgnoreCase("NONATOMIC_ASYNC")) {
+						getHandler(IPCMode.RMI).sendIPCMode(IPCMode.NONATOMIC_ASYNC);
+					} else if (line.equalsIgnoreCase("NONATOMIC_SYNC")) {
+						getHandler(IPCMode.RMI).sendIPCMode(IPCMode.NONATOMIC_SYNC);
+					} else if (line.equalsIgnoreCase("ATOMIC_ASYNC")) {
+						getHandler(IPCMode.RMI).sendIPCMode(IPCMode.ATOMIC_ASYNC);
+					} else if (line.equalsIgnoreCase("ATOMIC_SYNC")) {
+						getHandler(IPCMode.RMI).sendIPCMode(IPCMode.ATOMIC_SYNC);
+					} else if (line.equalsIgnoreCase("PAXOS")) {
+						getHandler(IPCMode.RMI).sendIPCMode(IPCMode.PAXOS);
 					} else if (line.equalsIgnoreCase("time")) {
 						if (cp != null) {
 							final int moves = (in.hasNextInt() ? in.nextInt() : 10);

@@ -246,7 +246,7 @@ public class NioBroadcastServer implements Runnable {
 			worker_thread.setName("worker");
 			worker_thread.start();
 			
-			Thread server_thread = new Thread(new NioBroadcastServer(null, 9090, worker));
+			Thread server_thread = new Thread(new NioBroadcastServer(null, NioClient.NIO_PORT, worker));
 			server_thread.setName("server");
 			server_thread.start();
 		} catch (IOException e) {

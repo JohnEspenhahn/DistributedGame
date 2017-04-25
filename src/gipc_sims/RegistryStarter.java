@@ -12,7 +12,6 @@ import gipc_sims.nio.NioBroadcastServer;
 import inputport.datacomm.simplex.buffer.nio.AScatterGatherSelectionManager;
 import inputport.rpc.GIPCLocateRegistry;
 import inputport.rpc.GIPCRegistry;
-import port.trace.serialization.extensible.ExtensibleSerializationTraceUtility;
 import serialization.SerializerSelector;
 
 public class RegistryStarter {
@@ -24,6 +23,7 @@ public class RegistryStarter {
 			// Start different IPC modes, each with their own server stack
 			RegistryStarter.startGIPC(new ServerImpl());
 			RegistryStarter.startRMI(new ServerImpl());
+			RegistryStarter.startObjectConsensus();
 			NioBroadcastServer.start();
 			
 			System.out.println("Registries started");
@@ -42,6 +42,10 @@ public class RegistryStarter {
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public static void startObjectConsensus() {
+		port.sessionserver.ASessionServerLauncher.main(new String[] { });
 	}
 	
 	public static void startGIPC(Server server) {

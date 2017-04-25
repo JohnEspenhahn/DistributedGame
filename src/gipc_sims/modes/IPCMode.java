@@ -1,10 +1,21 @@
 package gipc_sims.modes;
 
+import consensus.dewan.SimulationConsensusLauncher;
+import gipc_sims.Simulation;
+
 public enum IPCMode {
-	NIO, RMI, GIPC;
+	NIO, RMI, GIPC,
+	// Using dewan's consensus library
+	NONATOMIC_ASYNC,
+	NONATOMIC_SYNC,
+	ATOMIC_ASYNC,
+	ATOMIC_SYNC,
+	PAXOS;
 	
 	private static IPCMode mode = IPCMode.GIPC;
 	private static boolean mode_changing = false;
+	
+	public static SimulationConsensusLauncher scl;
 	
 	public synchronized static boolean takeModeChanging() {
 		if (mode_changing) return false;
@@ -26,9 +37,11 @@ public enum IPCMode {
 		IPCMode.class.notifyAll();
 	}
 	
-	public synchronized static void set(IPCMode m) {
+	public synchronized static void set(IPCMode m) {		
 		mode = m;
 		System.out.println("ipc mode = " + m);
+		
+		if (scl != null) scl.onIPCModeChanged(m);
 	}
 	
 	public synchronized static boolean isChanging() {

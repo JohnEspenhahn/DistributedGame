@@ -1,4 +1,4 @@
-package consensus;
+package consensus.mine;
 
 public class SynchronizedConsensus<E extends Enum<?>> {
 	private boolean invalid;

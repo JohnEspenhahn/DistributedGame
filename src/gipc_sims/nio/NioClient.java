@@ -28,6 +28,7 @@ import port.trace.nio.SocketChannelRegistered;
 import port.trace.nio.SocketChannelWritten;
 
 public class NioClient implements Runnable {
+	public static final int NIO_PORT = 9011;
 	public static final char SEPERATOR = '|';
 	
 	// The host:port combination to connect to
@@ -301,7 +302,7 @@ public class NioClient implements Runnable {
 		NioSender sender = null;
 		try {
 			// Start client listening in another thread
-			NioClient client = new NioClient(InetAddress.getByName(ip), 9090);
+			NioClient client = new NioClient(InetAddress.getByName(ip), NIO_PORT);
 			Thread t = new Thread(client);
 			t.setName("selector");
 			t.setDaemon(true);

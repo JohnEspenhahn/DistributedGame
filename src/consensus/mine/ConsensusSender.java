@@ -1,4 +1,4 @@
-package consensus;
+package consensus.mine;
 
 public interface ConsensusSender<E extends Enum<?>> {
 	
