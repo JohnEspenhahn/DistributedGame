@@ -34,7 +34,7 @@ public class DistroHalloweenSimulation implements PropertyChangeListener {
 		 // show the name of the traceable class in each log item
 		TraceableInfo.setPrintTraceable(true);
 		// show the current time in each log item
-		TraceableInfo.setPrintTime(true);
+		TraceableInfo.setPrintTime(false);
 		
 		HalloweenCommandProcessor cp = BeauAndersonFinalProject.createSimulation(
 				SIMULATION1_PREFIX, 0, SIMULATION_COMMAND_Y_OFFSET, SIMULATION_WIDTH, SIMULATION_HEIGHT, 100, 100);
@@ -53,49 +53,43 @@ public class DistroHalloweenSimulation implements PropertyChangeListener {
 		
 		this.sender = NioClient.startInThread(new RspHandler(cp));
 		
-		DistroHalloweenSimulation.startCommandLineThread(cp);
+		DistroHalloweenSimulation.startCommandLine(cp);
 	}
 	
-	public static void startCommandLineThread(HalloweenCommandProcessor cp) {	
+	public static void startCommandLine(HalloweenCommandProcessor cp) {	
 		// Command line input thread
-		Thread cmd_thread = (new Thread() {
-			@Override
-			public void run() {
-				Scanner in = new Scanner(System.in);
-				while (in.hasNextLine()) {
-					String line = in.next();
-					if (line.equalsIgnoreCase("atomic")) {
-						setMode(SimuMode.ATOMIC, cp);
-					} else if (line.equalsIgnoreCase("basic")) {
-						setMode(SimuMode.BASIC, cp);
-					} else if (line.equalsIgnoreCase("local")) {
-						setMode(SimuMode.LOCAL, cp);
-					} else if (line.equalsIgnoreCase("time")) {
-						if (cp != null) {
-							final int moves = (in.hasNextInt() ? in.nextInt() : 10);
-							WAIT_FOR_CMD = moves;
-							TIMING_START = System.currentTimeMillis();
-							System.out.println("Timing " + moves + " moves");
-							for (int i = 0; i < moves; i++) {
-								cp.setInputString("move 1 0");
-							}
-						} else {
-							System.err.println("Timing not supported without command processor!");
-						}
-					} else if (line.equalsIgnoreCase("showinfo")) {
-						Tracer.showInfo(true);
-					} else if (line.equalsIgnoreCase("hideinfo")) {
-						Tracer.showInfo(false);
-					} else if (cp != null) {
-						line += in.nextLine();
-						cp.setInputString(line);
+		Scanner in = new Scanner(System.in);
+		while (in.hasNextLine()) {
+			String line = in.next();
+			if (line.equalsIgnoreCase("atomic")) {
+				setMode(SimuMode.ATOMIC, cp);
+			} else if (line.equalsIgnoreCase("basic")) {
+				setMode(SimuMode.BASIC, cp);
+			} else if (line.equalsIgnoreCase("local")) {
+				setMode(SimuMode.LOCAL, cp);
+			} else if (line.equalsIgnoreCase("time")) {
+				if (cp != null) {
+					final int moves = (in.hasNextInt() ? in.nextInt() : 10);
+					WAIT_FOR_CMD = moves;
+					TIMING_START = System.currentTimeMillis();
+					System.out.println("Timing " + moves + " moves");
+					for (int i = 0; i < moves; i++) {
+						cp.setInputString("move 1 0");
 					}
+				} else {
+					System.err.println("Timing not supported without command processor!");
 				}
+			} else if (line.equalsIgnoreCase("showinfo")) {
+				Tracer.showInfo(true);
+			} else if (line.equalsIgnoreCase("hideinfo")) {
+				Tracer.showInfo(false);
+			} else if (cp != null) {
+				line += in.nextLine();
+				cp.setInputString(line);
 			}
-		});
-		cmd_thread.setName("cmdline");
-		cmd_thread.setDaemon(true);
-		cmd_thread.run();
+		}
+		
+		in.close();
 	}
 	
 	private static void setMode(SimuMode mode, HalloweenCommandProcessor cp) {

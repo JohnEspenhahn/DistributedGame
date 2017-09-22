@@ -19,6 +19,9 @@ import java.util.Map;
 import java.util.Set;
 
 import nio_sims.DistroHalloweenSimulation.SimuMode;
+import nio_sims.test.trace.SocketChannelAccepting;
+import util.trace.TraceableInfo;
+import util.trace.Tracer;
 
 public class NioBroadcastServer implements Runnable {
 	// The host:port combination to listen on
@@ -245,11 +248,21 @@ public class NioBroadcastServer implements Runnable {
 		// Register the server socket channel, indicating an interest in 
 		// accepting new connections
 		serverChannel.register(socketSelector, SelectionKey.OP_ACCEPT);
+		
+		SocketChannelAccepting.newCase(this, serverChannel);
 
 		return socketSelector;
 	}
 
 	public static void main(String[] args) {
+		Tracer.showWarnings(false);
+		Tracer.showInfo(true);
+		Tracer.setKeywordPrintStatus(NioBroadcastServer.class, true);
+		// Show the current thread in each log item
+		Tracer.setDisplayThreadName(true);
+		 // show the name of the traceable class in each log item
+		TraceableInfo.setPrintTraceable(true);
+		
 		try {
 			EchoWorker worker = new EchoWorker();
 			Thread worker_thread = new Thread(worker);
@@ -261,7 +274,7 @@ public class NioBroadcastServer implements Runnable {
 			server_thread.start();
 			
 			// Start command line thread
-			DistroHalloweenSimulation.startCommandLineThread(null);
+			DistroHalloweenSimulation.startCommandLine(null);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
