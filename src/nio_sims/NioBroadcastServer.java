@@ -249,7 +249,11 @@ public class NioBroadcastServer implements Runnable {
 		// accepting new connections
 		serverChannel.register(socketSelector, SelectionKey.OP_ACCEPT);
 		
+<<<<<<< HEAD
 		SocketChannelAccepting.newCase(this, serverChannel);
+=======
+		//----- Register selecting serverChannel
+>>>>>>> 56ca3d7cfc2368997249e230da49c6ad19b369d7
 
 		return socketSelector;
 	}
@@ -272,6 +276,7 @@ public class NioBroadcastServer implements Runnable {
 			Thread server_thread = new Thread(new NioBroadcastServer(null, 9090, worker));
 			server_thread.setName("server");
 			server_thread.start();
+			//---- Register selector thread (server_thread, broadcast server)
 			
 			// Start command line thread
 			DistroHalloweenSimulation.startCommandLine(null);
