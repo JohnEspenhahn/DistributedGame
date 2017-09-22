@@ -7,6 +7,7 @@ import java.util.Scanner;
 import StringProcessors.HalloweenCommandProcessor;
 import main.BeauAndersonFinalProject;
 import nio_sims.NioClient.NioSender;
+import nio_sims.test.trace.VectorTimedSocketChannelDataInfo;
 import port.trace.nio.LocalCommandObserved;
 import util.trace.TraceableInfo;
 import util.trace.Tracer;
@@ -24,6 +25,11 @@ public class DistroHalloweenSimulation implements PropertyChangeListener {
 	public static int SIMULATION_HEIGHT = 765;
 	
 	public static void main (String[] args) {
+		if (args.length < 1) {
+			System.err.println("Missing client name parameter!");
+			System.exit(1);
+		}
+		
 		Tracer.showWarnings(false);
 		Tracer.showInfo(true);
 		Tracer.setKeywordPrintStatus(DistroHalloweenSimulation.class, true);
@@ -35,6 +41,7 @@ public class DistroHalloweenSimulation implements PropertyChangeListener {
 		TraceableInfo.setPrintTraceable(true);
 		// show the current time in each log item
 		TraceableInfo.setPrintTime(false);
+		VectorTimedSocketChannelDataInfo.setVectorTimed(args[0]);
 		
 		HalloweenCommandProcessor cp = BeauAndersonFinalProject.createSimulation(
 				SIMULATION1_PREFIX, 0, SIMULATION_COMMAND_Y_OFFSET, SIMULATION_WIDTH, SIMULATION_HEIGHT, 100, 100);

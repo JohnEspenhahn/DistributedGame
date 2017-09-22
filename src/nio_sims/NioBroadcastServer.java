@@ -20,6 +20,9 @@ import java.util.Set;
 
 import nio_sims.DistroHalloweenSimulation.SimuMode;
 import nio_sims.test.trace.SocketChannelAccepting;
+import nio_sims.test.trace.SocketChannelRead;
+import nio_sims.test.trace.SocketChannelWritting;
+import nio_sims.test.trace.VectorTimedSocketChannelDataInfo;
 import util.trace.TraceableInfo;
 import util.trace.Tracer;
 
@@ -179,6 +182,7 @@ public class NioBroadcastServer implements Runnable {
 		int numRead;
 		try {
 			numRead = socketChannel.read(this.readBuffer);
+			SocketChannelRead.newCase(this, socketChannel, readBuffer);
 		} catch (IOException e) {
 			// The remote forcibly closed the connection, cancel
 			// the selection key and close the channel.
@@ -204,7 +208,7 @@ public class NioBroadcastServer implements Runnable {
 		}
 
 		// Hand the data off to our worker thread
-		this.worker.processData(this, socketChannel, this.readBuffer.array(), numRead);
+		this.worker.processData(this, socketChannel, this.readBuffer.array(), this.readBuffer.position());
 	}
 
 	private void write(SelectionKey key) throws IOException {
@@ -216,6 +220,8 @@ public class NioBroadcastServer implements Runnable {
 			// Write until there's not more data ...
 			while (!queue.isEmpty()) {
 				ByteBuffer buf = (ByteBuffer) queue.get(0);
+				
+				buf = SocketChannelWritting.newCase(this, socketChannel, buf).getProcessedBuffer();
 				socketChannel.write(buf);
 				if (buf.remaining() > 0) {
 					// ... or the socket's buffer fills up
@@ -249,11 +255,7 @@ public class NioBroadcastServer implements Runnable {
 		// accepting new connections
 		serverChannel.register(socketSelector, SelectionKey.OP_ACCEPT);
 		
-<<<<<<< HEAD
 		SocketChannelAccepting.newCase(this, serverChannel);
-=======
-		//----- Register selecting serverChannel
->>>>>>> 56ca3d7cfc2368997249e230da49c6ad19b369d7
 
 		return socketSelector;
 	}
@@ -266,6 +268,7 @@ public class NioBroadcastServer implements Runnable {
 		Tracer.setDisplayThreadName(true);
 		 // show the name of the traceable class in each log item
 		TraceableInfo.setPrintTraceable(true);
+		VectorTimedSocketChannelDataInfo.setVectorTimed("server");
 		
 		try {
 			EchoWorker worker = new EchoWorker();

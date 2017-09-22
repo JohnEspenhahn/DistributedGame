@@ -20,9 +20,9 @@ import java.util.Map;
 import port.trace.nio.SocketChannelConnectFinished;
 import port.trace.nio.SocketChannelConnectInitiated;
 import port.trace.nio.SocketChannelInterestOp;
-import port.trace.nio.SocketChannelRead;
 import port.trace.nio.SocketChannelRegistered;
-import port.trace.nio.SocketChannelWritten;
+import nio_sims.test.trace.SocketChannelRead;
+import nio_sims.test.trace.SocketChannelWritting;
 
 public class NioClient implements Runnable {
 	private static final byte[] EMPTY_BYTES = new byte[0];
@@ -245,8 +245,8 @@ public class NioClient implements Runnable {
 			// Write until there's not more data ...
 			while (!queue.isEmpty()) {
 				ByteBuffer buf = queue.get(0);
+				buf = SocketChannelWritting.newCase(this, socketChannel, buf).getProcessedBuffer();
 				socketChannel.write(buf);
-				SocketChannelWritten.newCase(this, socketChannel, buf);
 				if (buf.remaining() > 0) {
 					// ... or the socket's buffer fills up
 					break;
