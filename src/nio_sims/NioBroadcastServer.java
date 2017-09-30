@@ -208,7 +208,7 @@ public class NioBroadcastServer implements Runnable {
 		}
 
 		// Hand the data off to our worker thread
-		this.worker.processData(this, socketChannel, this.readBuffer.array(), this.readBuffer.position());
+		this.worker.processData(this, socketChannel, this.readBuffer.array(), this.readBuffer.limit());
 	}
 
 	private void write(SelectionKey key) throws IOException {
@@ -268,7 +268,7 @@ public class NioBroadcastServer implements Runnable {
 		Tracer.setDisplayThreadName(true);
 		 // show the name of the traceable class in each log item
 		TraceableInfo.setPrintTraceable(true);
-		VectorTimedSocketChannelDataInfo.setVectorTimed("server");
+		VectorTimedSocketChannelDataInfo.setVectorTimed("server", args);
 		
 		try {
 			EchoWorker worker = new EchoWorker();

@@ -5,9 +5,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class InputDeserializer implements InputHandler {
-	public static final String SocketChannelAcceptingEvent = "SocketChannelAccepting";
+import nio_sims.test.trace.SocketChannelAccepting;
+import nio_sims.test.trace.SocketChannelRead;
+import port.trace.nio.SocketChannelConnectFinished;
+import port.trace.nio.SocketChannelWritten;
 
+public class InputDeserializer implements InputHandler {
 	private List<String> q;
 	private Map<String, Object> eventLocks;
 	
@@ -15,24 +18,30 @@ public class InputDeserializer implements InputHandler {
 		this.q = new LinkedList<String>();
 		
 		this.eventLocks = new HashMap<String,Object>();
-		this.eventLocks.put(SocketChannelAcceptingEvent, new Object());
+		this.eventLocks.put(SocketChannelConnectFinished.class.getSimpleName(), new Object());
+		this.eventLocks.put(SocketChannelAccepting.class.getSimpleName(), new Object());
+		this.eventLocks.put(SocketChannelWritten.class.getSimpleName(), new Object());
+		this.eventLocks.put(SocketChannelRead.class.getSimpleName(), new Object());
 	}
 	
-	public void waitForEvent(String event) {
-		if (!eventLocks.containsKey(event))
+	public void waitForEvent(Class<?> event) {
+		String eventName = event.getSimpleName();
+		if (!eventLocks.containsKey(eventName)) {
+			System.err.println("Unknown event " + eventName);
 			return;
+		}
 		
-		Object key = eventLocks.get(event);
+		Object key = eventLocks.get(eventName);
 		synchronized (key) {
 			try {
-				System.err.println("Waiting for event " + event);
+				System.err.println("Waiting for event " + eventName);
 				key.wait();
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
 		
-		System.err.println("Got event " + event);
+		System.err.println("Got event " + eventName);
 	}
 	
 	public void handleInputAsync(String input) {

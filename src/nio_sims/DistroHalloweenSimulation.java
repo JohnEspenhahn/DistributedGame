@@ -41,7 +41,13 @@ public class DistroHalloweenSimulation implements PropertyChangeListener {
 		TraceableInfo.setPrintTraceable(true);
 		// show the current time in each log item
 		TraceableInfo.setPrintTime(false);
-		VectorTimedSocketChannelDataInfo.setVectorTimed(args[0]);
+			
+		// TODO make special processor to set this up
+		if (args.length > 0) {
+			String[] otherProcessNames = new String[args.length-1];
+			System.arraycopy(args, 1, otherProcessNames, 0, args.length-1);
+			VectorTimedSocketChannelDataInfo.setVectorTimed(args[0], otherProcessNames);
+		}
 		
 		HalloweenCommandProcessor cp = BeauAndersonFinalProject.createSimulation(
 				SIMULATION1_PREFIX, 0, SIMULATION_COMMAND_Y_OFFSET, SIMULATION_WIDTH, SIMULATION_HEIGHT, 100, 100);

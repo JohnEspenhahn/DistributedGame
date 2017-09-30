@@ -4,14 +4,20 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import org.github.com.jvec.JVec;
+import org.github.com.jvec.formatter.JFormatter;
+import org.github.com.jvec.formatter.JSortedMapFormatter;
 
 import port.trace.nio.SocketChannelDataInfo;
 
 public class VectorTimedSocketChannelDataInfo extends SocketChannelDataInfo {
 
 	private static final long serialVersionUID = 7715086359484383293L;
+	
+	private static final JFormatter<? super SortedMap<?,?>> VC_SORTED_FORMATTER = new JSortedMapFormatter<SortedMap<?,?>>();
 	private static JVec vcInfo;
 	
 	public enum VectorTimedType {
@@ -28,12 +34,23 @@ public class VectorTimedSocketChannelDataInfo extends SocketChannelDataInfo {
 	}
 	
 	protected static String addr2Str(SocketAddress addr) {
-		String str = addr.toString();
-		if (str.matches("^.*/\\d+\\.\\d+\\.\\d+\\.\\d+\\.\\:\\d+$")) {
-			return str.replaceAll("^.*/", "");
-		} else {
-			return str;
+		String[] ip_port = addr.toString().replaceFirst("^.*/", "").split(":");
+		String[] ips = ip_port[0].split("\\.");
+		
+		StringBuilder builder = new StringBuilder();
+		
+		int ip32bit = 0;
+		for (int i = 0; i < ips.length; i++) {
+			ip32bit |= Integer.parseInt(ips[ips.length-(i+1)]) << (8*i);
 		}
+		String ipHex = Integer.toHexString(ip32bit);
+		for (int i = 8; i > ipHex.length(); i--)
+			builder.append("0");
+		builder.append(ipHex);
+		builder.append("p");
+		builder.append(ip_port[1]);
+		
+		return builder.toString();
 	}
 	
 	private byte[] getBytes(ByteBuffer bb) {
@@ -81,10 +98,11 @@ public class VectorTimedSocketChannelDataInfo extends SocketChannelDataInfo {
 		super.announce();
 	}
 	
-	public static void setVectorTimed(String processName) {
+	public static void setVectorTimed(String processName, String... otherProcessNames) {
 		if (vcInfo == null) {
-			vcInfo = new JVec(processName, "basiclog");
-			vcInfo.enableLogging();
+			vcInfo = new JVec("basiclog", VC_SORTED_FORMATTER, processName, otherProcessNames);
+			vcInfo.enableLogging(); // Format as a sorted map (key excluded)
+			vcInfo.setWarnDynamicJoin(); // Warn if dynamic join b/c we're using sorted display (key excluded)		
 		}
 	}
 

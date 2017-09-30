@@ -39,7 +39,7 @@ public class InputForwarder implements InputHandler {
 				value = q.remove();
 			}
 			
-			forwardValue(value);
+			forwardValue(prefix + value);
 		}
 	}
 	

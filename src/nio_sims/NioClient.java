@@ -204,7 +204,7 @@ public class NioClient implements Runnable {
 		}
 
 		// Handle the response
-		this.handleResponse(socketChannel, this.readBuffer.array(), numRead);
+		this.handleResponse(socketChannel, this.readBuffer.array(), this.readBuffer.limit());
 	}
 
 	/**
