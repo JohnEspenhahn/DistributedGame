@@ -21,6 +21,12 @@ import java.util.Map;
 import java.util.Set;
 
 import nio_sims.DistroHalloweenSimulation.SimuMode;
+import nio_sims.test.trace.SocketChannelAccepting;
+import nio_sims.test.trace.SocketChannelRead;
+import nio_sims.test.trace.SocketChannelWritting;
+import nio_sims.test.trace.VectorTimedSocketChannelDataInfo;
+import util.trace.TraceableInfo;
+import util.trace.Tracer;
 
 public class NioBroadcastServer implements Runnable {
 	// The host:port combination to listen on
@@ -177,6 +183,7 @@ public class NioBroadcastServer implements Runnable {
 		int numRead;
 		try {
 			numRead = socketChannel.read(this.readBuffer);
+			SocketChannelRead.newCase(this, socketChannel, readBuffer);
 		} catch (IOException e) {
 			// The remote forcibly closed the connection, cancel
 			// the selection key and close the channel.
@@ -196,7 +203,7 @@ public class NioBroadcastServer implements Runnable {
 		}
 
 		// Hand the data off to our worker thread
-		this.worker.processData(this, socketChannel, this.readBuffer.array(), numRead);
+		this.worker.processData(this, socketChannel, this.readBuffer.array(), this.readBuffer.limit());
 	}
 
 	private void write(SelectionKey key) throws IOException {
@@ -208,6 +215,8 @@ public class NioBroadcastServer implements Runnable {
 			// Write until there's not more data ...
 			while (!queue.isEmpty()) {
 				ByteBuffer buf = (ByteBuffer) queue.get(0);
+				
+				buf = SocketChannelWritting.newCase(this, socketChannel, buf).getProcessedBuffer();
 				socketChannel.write(buf);
 				if (buf.remaining() > 0) {
 					// ... or the socket's buffer fills up
@@ -240,11 +249,22 @@ public class NioBroadcastServer implements Runnable {
 		// Register the server socket channel, indicating an interest in 
 		// accepting new connections
 		serverChannel.register(socketSelector, SelectionKey.OP_ACCEPT);
+		
+		SocketChannelAccepting.newCase(this, serverChannel);
 
 		return socketSelector;
 	}
 
 	public static void main(String[] args) {
+		Tracer.showWarnings(false);
+		Tracer.showInfo(true);
+		Tracer.setKeywordPrintStatus(NioBroadcastServer.class, true);
+		// Show the current thread in each log item
+		Tracer.setDisplayThreadName(true);
+		 // show the name of the traceable class in each log item
+		TraceableInfo.setPrintTraceable(true);
+		VectorTimedSocketChannelDataInfo.setVectorTimed("server", args);
+		
 		try {
 			EchoWorker worker = new EchoWorker();
 			Thread worker_thread = new Thread(worker);
@@ -254,9 +274,10 @@ public class NioBroadcastServer implements Runnable {
 			Thread server_thread = new Thread(new NioBroadcastServer(null, 9090, worker));
 			server_thread.setName("server");
 			server_thread.start();
+			//---- Register selector thread (server_thread, broadcast server)
 			
 			// Start command line thread
-			DistroHalloweenSimulation.startCommandLineThread(null);
+			DistroHalloweenSimulation.startCommandLine(null);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
