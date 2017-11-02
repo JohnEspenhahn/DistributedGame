@@ -50,7 +50,7 @@ public class RegistryStarter {
 	
 	public static void startGIPC(Server server) {
 		// ExtensibleSerializationTraceUtility.setTracing();
-		SerializerSelector.setSerializerFactory(new MySerializerFactory());
+//		SerializerSelector.setSerializerFactory(new MySerializerFactory());
 		
 		AScatterGatherSelectionManager.setMaxOutstandingWrites(500);
 		GIPCRegistry reg = GIPCLocateRegistry.createRegistry(GIPC_PORT);

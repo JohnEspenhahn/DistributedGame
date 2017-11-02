@@ -4,12 +4,14 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -35,8 +37,6 @@ public class NioBroadcastServer implements Runnable {
 	private ByteBuffer readBuffer = ByteBuffer.allocate(8192);
 
 	private EchoWorker worker;
-
-	private Set<SocketChannel> clients = new HashSet();
 	
 	// A list of PendingChange instances
 	private List<ChangeRequest> pendingChanges = new LinkedList();
@@ -73,24 +73,29 @@ public class NioBroadcastServer implements Runnable {
 	
 	public void broadcast(SocketChannel src, byte[] data) {
 		// System.out.println("Broadcasting: " + new String(data));
+	
+		// Get thread safe iterator by copying key set
+		Iterator<SelectionKey> keys;
+		synchronized (this.selector) {
+			keys = Arrays.stream(this.selector.keys().toArray(new SelectionKey[0])).iterator();
+		}
 		
-		synchronized (this.clients) {
-			Iterator<SocketChannel> clients = this.clients.iterator();
-			while (clients.hasNext()) {
-				SocketChannel socket = clients.next();
-				
+		while (keys.hasNext()) {
+			SelectionKey key = keys.next();
+			if (key.isValid() && key.channel() instanceof SocketChannel) {
 				// If not atomic, don't send to self
-				if (DistroHalloweenSimulation.MODE != SimuMode.ATOMIC && socket == src) continue;
+				if (DistroHalloweenSimulation.MODE != SimuMode.ATOMIC && key.channel() == src) continue;
 				
 				synchronized (this.pendingChanges) {
 					// Indicate we want the interest ops set changed
+					SocketChannel socket = (SocketChannel) key.channel();
 					this.pendingChanges.add(new ChangeRequest(socket, ChangeRequest.CHANGEOPS, SelectionKey.OP_WRITE));
 		
 					// And queue the data we want written
 					synchronized (this.pendingData) {
 						List<ByteBuffer> queue = this.pendingData.get(socket);
 						if (queue == null) {
-							queue = new ArrayList();
+							queue = new ArrayList<>();
 							this.pendingData.put(socket, queue);
 						}
 						queue.add(ByteBuffer.wrap(data));
@@ -160,10 +165,6 @@ public class NioBroadcastServer implements Runnable {
 		// Register the new SocketChannel with our Selector, indicating
 		// we'd like to be notified when there's data waiting to be read
 		socketChannel.register(this.selector, SelectionKey.OP_READ);
-		
-		synchronized(this.clients) {
-			this.clients.add(socketChannel);
-		}
 	}
 
 	private void read(SelectionKey key) throws IOException {
@@ -179,9 +180,6 @@ public class NioBroadcastServer implements Runnable {
 		} catch (IOException e) {
 			// The remote forcibly closed the connection, cancel
 			// the selection key and close the channel.
-			synchronized(this.clients) {
-				this.clients.remove(socketChannel);
-			}
 			key.cancel();
 			socketChannel.close();
 			System.out.println("Connection forcibly closed by remote");
@@ -191,9 +189,6 @@ public class NioBroadcastServer implements Runnable {
 		if (numRead == -1) {
 			// Remote entity shut the socket down cleanly. Do the
 			// same from our end and cancel the channel.
-			synchronized(this.clients) {
-				this.clients.remove(socketChannel);
-			}
 			key.channel().close();
 			key.cancel();
 			System.out.println("Client disconnected");

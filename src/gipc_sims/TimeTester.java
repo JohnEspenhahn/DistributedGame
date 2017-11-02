@@ -35,27 +35,31 @@ public class TimeTester {
 		
 		// Command processor
 		try {
+//			port.trace.consensus.ConsensusTraceUtility.setTracing();
 			AScatterGatherSelectionManager.setMaxOutstandingWrites(500);
 			Simulation sim = new Simulation(cp, name, ip);
 			
-			HandlerLocal RMI = sim.getHandler(IPCMode.RMI);
-			RMI.sendIPCMode(IPCMode.GIPC);
-			for (SimuMode simuMode: SimuMode.values()) {
-				RMI.sendSimuMode(simuMode);
-				sim.runTiming(500);	
-			}
+			int runs = 2;
 			
-			RMI.sendIPCMode(IPCMode.NIO);
-			for (SimuMode simuMode: SimuMode.values()) {
-				RMI.sendSimuMode(simuMode);
-				sim.runTiming(500);	
-			}
+			HandlerLocal ATOMIC_ASYNC = sim.getHandler(IPCMode.ATOMIC_ASYNC);
+			ATOMIC_ASYNC.sendIPCMode(IPCMode.ATOMIC_ASYNC);
+			sim.runTiming(runs);
 			
-			RMI.sendIPCMode(IPCMode.RMI);
-			for (SimuMode simuMode: SimuMode.values()) {
-				RMI.sendSimuMode(simuMode);
-				sim.runTiming(500);	
-			}
+			HandlerLocal ATOMIC_SYNC = sim.getHandler(IPCMode.ATOMIC_SYNC);
+			ATOMIC_SYNC.sendIPCMode(IPCMode.ATOMIC_SYNC);
+			sim.runTiming(runs);
+			
+			HandlerLocal NONATOMIC_ASYNC = sim.getHandler(IPCMode.NONATOMIC_ASYNC);
+			NONATOMIC_ASYNC.sendIPCMode(IPCMode.NONATOMIC_ASYNC);
+			sim.runTiming(runs);
+			
+			HandlerLocal NONATOMIC_SYNC = sim.getHandler(IPCMode.NONATOMIC_SYNC);
+			NONATOMIC_SYNC.sendIPCMode(IPCMode.NONATOMIC_SYNC);
+			sim.runTiming(runs);
+			
+			HandlerLocal PAXOS = sim.getHandler(IPCMode.PAXOS);
+			PAXOS.sendIPCMode(IPCMode.PAXOS);
+			sim.runTiming(runs);
 			
 			System.out.println("Finished timing");
 		} catch (MalformedURLException e) {

@@ -19,8 +19,6 @@ public class ACustomCounterClient extends AMultiLayerCounterClient {
 				.setDuplexSentCallCompleterFactory(new ACustomSentFuncOrProcCallCompleterFactory());
 		
 		DuplexObjectInputPortSelector.setDuplexInputPortFactory(new ACustomDuplexObjectInputPortFactory());
-		
-		SerializerSelector.setSerializerFactory(new ACustomSerializerFactory());
 	}
 
 	public static void main(String[] args) {

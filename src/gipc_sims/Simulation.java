@@ -85,7 +85,8 @@ public class Simulation implements PropertyChangeListener {
 		this.handlers = new HashMap<IPCMode, HandlerLocal>();
 		
 		// Start GIPC
-		SerializerSelector.setSerializerFactory(new MySerializerFactory());
+		port.trace.consensus.ConsensusTraceUtility.setTracing();
+//		SerializerSelector.setSerializerFactory(new MySerializerFactory());
 		GIPCRegistry gipc_registry = GIPCLocateRegistry.getRegistry(ip, RegistryStarter.GIPC_PORT, name);
 		Server gipc_server = (Server) gipc_registry.lookup(Server.class, Simulation.SERVER_OBJ);
 		
@@ -106,6 +107,7 @@ public class Simulation implements PropertyChangeListener {
 		
 		// Start consensus object
 		short port = (short) ((name.hashCode() % 2000) + 7000);
+		System.out.println("On port/id: " + port); // debug
 		SimulationConsensusLauncher scl = SimulationConsensusLauncher.get(this, "" + port, port);
 		IPCMode.scl = scl; // Need to store for IPC to update
 		this.handlers.put(IPCMode.ATOMIC_ASYNC, scl);
