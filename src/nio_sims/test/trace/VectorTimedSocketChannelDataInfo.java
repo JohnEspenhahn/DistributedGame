@@ -5,11 +5,11 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.SortedMap;
-import java.util.TreeMap;
 
 import org.github.com.jvec.JVec;
-import org.github.com.jvec.formatter.JFormatter;
-import org.github.com.jvec.formatter.JSortedMapFormatter;
+
+import com.espenhahn.jformatter.JFormatter;
+import com.espenhahn.jformatter.map.JSortedMapFormatter;
 
 import port.trace.nio.SocketChannelDataInfo;
 

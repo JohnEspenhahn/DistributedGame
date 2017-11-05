@@ -5,14 +5,11 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.Scanner;
 
-import org.espenhahn.serializer.MySerializerFactory;
-
 import gipc_sims.modes.ServersSynchronizedMode;
 import gipc_sims.nio.NioBroadcastServer;
 import inputport.datacomm.simplex.buffer.nio.AScatterGatherSelectionManager;
 import inputport.rpc.GIPCLocateRegistry;
 import inputport.rpc.GIPCRegistry;
-import serialization.SerializerSelector;
 
 public class RegistryStarter {
 	public static final int GIPC_PORT = 15247;

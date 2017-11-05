@@ -13,8 +13,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
-import org.espenhahn.serializer.MySerializerFactory;
-
 import StringProcessors.HalloweenCommandProcessor;
 import consensus.dewan.SimulationConsensusLauncher;
 import gipc_sims.modes.ConsensusMode;
@@ -27,7 +25,6 @@ import inputport.rpc.GIPCRegistry;
 import main.BeauAndersonFinalProject;
 import port.trace.nio.LocalCommandObserved;
 import port.trace.nio.RemoteCommandExecuted;
-import serialization.SerializerSelector;
 import util.trace.TraceableInfo;
 import util.trace.Tracer;
 
