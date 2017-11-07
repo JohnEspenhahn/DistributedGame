@@ -17,12 +17,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import com.hahn.doteditdistance.utils.logger.Logger;
+import com.hahn.doteditdistance.utils.logger.LoggerEvents;
+
 import port.trace.nio.SocketChannelConnectFinished;
 import port.trace.nio.SocketChannelConnectInitiated;
 import port.trace.nio.SocketChannelInterestOp;
+import port.trace.nio.SocketChannelRead;
 import port.trace.nio.SocketChannelRegistered;
-import nio_sims.test.trace.SocketChannelRead;
-import nio_sims.test.trace.SocketChannelWritting;
+import port.trace.nio.SocketChannelWritten;
 
 public class NioClient implements Runnable {
 	private static final byte[] EMPTY_BYTES = new byte[0];
@@ -186,6 +189,7 @@ public class NioClient implements Runnable {
 		int numRead;
 		try {
 			numRead = socketChannel.read(this.readBuffer);
+			readBuffer = Logger.get().prepareReceive(socketChannel, readBuffer);
 			SocketChannelRead.newCase(this, socketChannel, readBuffer);
 		} catch (IOException e) {
 			// The remote forcibly closed the connection, cancel
@@ -245,7 +249,8 @@ public class NioClient implements Runnable {
 			// Write until there's not more data ...
 			while (!queue.isEmpty()) {
 				ByteBuffer buf = queue.get(0);
-				buf = SocketChannelWritting.newCase(this, socketChannel, buf).getProcessedBuffer();
+				buf = Logger.get().prepareSend(socketChannel, buf);
+				SocketChannelWritten.newCase(this, socketChannel, buf);
 				socketChannel.write(buf);
 				if (buf.remaining() > 0) {
 					// ... or the socket's buffer fills up
@@ -275,6 +280,9 @@ public class NioClient implements Runnable {
 		try {
 			socketChannel.finishConnect();
 			SocketChannelConnectFinished.newCase(this, socketChannel);
+			
+			LoggerEvents.onConnected(socketChannel, NioBroadcastServer.PROCESS_NAME);
+			LoggerEvents.onFinishedConnecting();
 		} catch (IOException e) {
 			// Cancel the channel's registration with our selector
 			System.out.println(e);

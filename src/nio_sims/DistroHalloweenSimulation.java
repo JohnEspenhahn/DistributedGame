@@ -4,10 +4,11 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.Scanner;
 
+import com.hahn.doteditdistance.utils.logger.Logger;
+
 import StringProcessors.HalloweenCommandProcessor;
 import main.BeauAndersonFinalProject;
 import nio_sims.NioClient.NioSender;
-import nio_sims.test.trace.VectorTimedSocketChannelDataInfo;
 import port.trace.nio.LocalCommandObserved;
 import util.trace.TraceableInfo;
 import util.trace.Tracer;
@@ -43,11 +44,7 @@ public class DistroHalloweenSimulation implements PropertyChangeListener {
 		TraceableInfo.setPrintTime(false);
 			
 		// TODO make special processor to set this up
-		if (args.length > 0) {
-			String[] otherProcessNames = new String[args.length-1];
-			System.arraycopy(args, 1, otherProcessNames, 0, args.length-1);
-			VectorTimedSocketChannelDataInfo.setVectorTimed(args[0], otherProcessNames);
-		}
+		if (args.length > 0) Logger.get().enable(args[0], args);
 		
 		HalloweenCommandProcessor cp = BeauAndersonFinalProject.createSimulation(
 				SIMULATION1_PREFIX, 0, SIMULATION_COMMAND_Y_OFFSET, SIMULATION_WIDTH, SIMULATION_HEIGHT, 100, 100);

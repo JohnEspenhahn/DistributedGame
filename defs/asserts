@@ -1,0 +1,3 @@
+finishedConnecting AFTER connect
+connect BEFORE finishedConnecting
+finishedConnecting ONTHREAD selector

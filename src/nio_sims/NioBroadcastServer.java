@@ -4,7 +4,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -13,22 +12,24 @@ import java.nio.channels.spi.SelectorProvider;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+
+import com.hahn.doteditdistance.utils.logger.Logger;
+import com.hahn.doteditdistance.utils.logger.LoggerEvents;
 
 import nio_sims.DistroHalloweenSimulation.SimuMode;
-import nio_sims.test.trace.SocketChannelAccepting;
-import nio_sims.test.trace.SocketChannelRead;
-import nio_sims.test.trace.SocketChannelWritting;
-import nio_sims.test.trace.VectorTimedSocketChannelDataInfo;
+import nio_sims.test.SocketChannelAccepting;
+import port.trace.nio.SocketChannelRead;
+import port.trace.nio.SocketChannelWritten;
 import util.trace.TraceableInfo;
 import util.trace.Tracer;
 
 public class NioBroadcastServer implements Runnable {
+	public static final String PROCESS_NAME = "0";
+	
 	// The host:port combination to listen on
 	private InetAddress hostAddress;
 	private int port;
@@ -80,12 +81,8 @@ public class NioBroadcastServer implements Runnable {
 	public void broadcast(SocketChannel src, byte[] data) {
 		// System.out.println("Broadcasting: " + new String(data));
 	
-		// Get thread safe iterator by copying key set
-		Iterator<SelectionKey> keys;
-		synchronized (this.selector) {
-			keys = Arrays.stream(this.selector.keys().toArray(new SelectionKey[0])).iterator();
-		}
-		
+		// TODO this is def the wrong way to do this. Move selector key manipulation into selector thread
+		Iterator<SelectionKey> keys = Arrays.stream(this.selector.keys().toArray(new SelectionKey[0])).iterator();
 		while (keys.hasNext()) {
 			SelectionKey key = keys.next();
 			if (key.isValid() && key.channel() instanceof SocketChannel) {
@@ -167,6 +164,8 @@ public class NioBroadcastServer implements Runnable {
 		SocketChannel socketChannel = serverSocketChannel.accept();
 		Socket socket = socketChannel.socket();
 		socketChannel.configureBlocking(false);
+		
+		LoggerEvents.onConnectedServer(socketChannel);
 
 		// Register the new SocketChannel with our Selector, indicating
 		// we'd like to be notified when there's data waiting to be read
@@ -183,6 +182,7 @@ public class NioBroadcastServer implements Runnable {
 		int numRead;
 		try {
 			numRead = socketChannel.read(this.readBuffer);
+			readBuffer = Logger.get().prepareReceive(socketChannel, readBuffer);
 			SocketChannelRead.newCase(this, socketChannel, readBuffer);
 		} catch (IOException e) {
 			// The remote forcibly closed the connection, cancel
@@ -215,8 +215,8 @@ public class NioBroadcastServer implements Runnable {
 			// Write until there's not more data ...
 			while (!queue.isEmpty()) {
 				ByteBuffer buf = (ByteBuffer) queue.get(0);
-				
-				buf = SocketChannelWritting.newCase(this, socketChannel, buf).getProcessedBuffer();
+				buf = Logger.get().prepareSend(socketChannel, buf);
+				SocketChannelWritten.newCase(this, socketChannel, buf);
 				socketChannel.write(buf);
 				if (buf.remaining() > 0) {
 					// ... or the socket's buffer fills up
@@ -249,7 +249,6 @@ public class NioBroadcastServer implements Runnable {
 		// Register the server socket channel, indicating an interest in 
 		// accepting new connections
 		serverChannel.register(socketSelector, SelectionKey.OP_ACCEPT);
-		
 		SocketChannelAccepting.newCase(this, serverChannel);
 
 		return socketSelector;
@@ -263,7 +262,8 @@ public class NioBroadcastServer implements Runnable {
 		Tracer.setDisplayThreadName(true);
 		 // show the name of the traceable class in each log item
 		TraceableInfo.setPrintTraceable(true);
-		VectorTimedSocketChannelDataInfo.setVectorTimed("server", args);
+		
+		if (args.length > 0) Logger.get().enable(PROCESS_NAME, args);
 		
 		try {
 			EchoWorker worker = new EchoWorker();
